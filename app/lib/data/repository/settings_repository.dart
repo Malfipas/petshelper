@@ -14,8 +14,11 @@ class SettingsRepository {
   /// 演示视频地址的占位值，库里空着时显示它。真实链接定了再换。
   static const String demoUrlPlaceholder = 'https://example.com/ai-pet-demo.mp4';
 
-  /// 项目仓库地址的占位值，同上。
-  static const String repoUrlPlaceholder = 'https://example.com/ai-pet';
+  /// 项目仓库地址的占位值，库里空着时显示它。
+  ///
+  /// 这一版只读展示、可一键复制：仓库已经建好，就不再挂 example.com 那种
+  /// 复制走也打不开的假地址。
+  static const String repoUrlPlaceholder = 'https://github.com/Malfipas/petshelper';
 
   final SettingsDao _settings;
 
