@@ -114,3 +114,4 @@ AI桌宠日常助手/
 - 单机。没有账号、没有云同步，换机器要重新填 key、数据库要自己拷。
 - AI 依赖外部服务，断网或额度用尽时四处入口都退回本地行为（想法留未分类、日总结退回随手记整合），不假装成功。
 - `.agents/`、`.codebuddy/`、`.mcp-probe-kit/` 这些是开发时用的 AI 辅助工具链，不入库；克隆后要用就按 AGENTS.md 重跑一次 `init_project_context`。
+- **克隆后第一次 `flutter test` 要能访问 GitHub**。`sqlite3` 的构建钩子会去 `github.com/simolus3/sqlite3.dart/releases` 取一份预编译库（本机产物在 `.dart_tool/` 里，不入库）。到 GitHub 不通时报 `Building native assets failed`，换网络或找一台已经构建过的机器即可；`flutter pub get` 与 `dart analyze` 不受影响，本机就是这么验证的。
