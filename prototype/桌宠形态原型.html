@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  【原型 · 用完即弃】AI桌宠「存在形态」三变体对比
+
+  这是一个 throwaway prototype，不是产品代码，不要搬进正式工程。
+  它只回答两个问题：
+    1. 桌宠在办公时怎样存在才不挡视线，同时还能便捷唤出？
+    2. 唤出路径实际需要几步？
+
+  运行方式：双击本文件，用浏览器打开。
+  切换变体：底部中间的切换栏，或按键盘 ← → 。地址栏会同步 ?variant=A|B|C，可刷新保持。
+
+  ⚠ 浏览器答不了的事（留给阶段 4 的技术选型，别在这里绕）：
+    - 全局快捷键（不在本页聚焦时也能呼出）
+    - 跨应用置顶、托盘常驻、鼠标穿透
+    - 多显示器下的位置记忆
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[原型] 桌宠存在形态 · 三变体</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; }
+  body { background: #2b3440; }
+
+  /* ============ 模拟办公环境（三变体都叠在它上面评估） ============ */
+  .office {
+    position: absolute; inset: 22px;
+    background: #fff; border-radius: 7px; overflow: hidden;
+    box-shadow: 0 18px 50px rgba(0,0,0,.45);
+    display: flex; flex-direction: column;
+  }
+  .office-bar {
+    flex: none; height: 34px; display: flex; align-items: center; gap: 7px;
+    padding: 0 12px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;
+    font-size: 12px; color: #4b5563;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .office-name { margin-left: 10px; }
+  .office-main { flex: 1; display: flex; overflow: hidden; }
+  .office-side {
+    flex: none; width: 170px; background: #fafafa; border-right: 1px solid #eee;
+    padding: 14px 12px; font-size: 12px; color: #9ca3af; line-height: 2.1;
+  }
+  .office-doc { flex: 1; padding: 30px 46px; overflow: auto; color: #374151; font-size: 14px; line-height: 1.95; }
+  .office-doc h1 { font-size: 17px; color: #111827; margin: 0 0 18px; }
+  .office-doc p { margin: 0 0 13px; }
+  .office-doc .dim { color: #9ca3af; }
+
+  /* ============ 变体 A：角落挂件 ============ */
+  .va-pet {
+    position: fixed; right: 30px; bottom: 30px; width: 74px; height: 74px;
+    z-index: 50; cursor: pointer; transition: transform .15s;
+  }
+  .va-pet:hover { transform: scale(1.06); }
+  .va-body {
+    width: 100%; height: 100%; border-radius: 22px;
+    background: linear-gradient(160deg, #7dd3fc, #38bdf8);
+    box-shadow: 0 8px 22px rgba(56,189,248,.42);
+    display: flex; align-items: center; justify-content: center; gap: 11px;
+    animation: breathe 3.6s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%,100% { transform: translateY(0) scale(1); }
+    50%     { transform: translateY(-4px) scale(1.03); }
+  }
+  .va-eye { width: 8px; height: 11px; border-radius: 50%; background: #0f172a; }
+  .va-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 320px; z-index: 49;
+    background: #fff; border-left: 1px solid #e5e7eb;
+    box-shadow: -12px 0 34px rgba(0,0,0,.13);
+    transform: translateX(105%); transition: transform .26s cubic-bezier(.4,0,.2,1);
+    padding: 22px; display: flex; flex-direction: column; gap: 14px; font-size: 13px; color: #374151;
+  }
+  .va-panel.open { transform: translateX(0); }
+  .va-close { position: absolute; top: 12px; right: 14px; cursor: pointer; color: #9ca3af; font-size: 17px; }
+
+  /* ============ 变体 B：边缘停靠条 ============ */
+  .vb-handle {
+    position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+    width: 9px; height: 104px; border-radius: 0 9px 9px 0;
+    background: rgba(255,255,255,.10); z-index: 50; cursor: pointer;
+    transition: background .2s, width .2s;
+  }
+  .vb-handle:hover, .vb-handle.on { background: #38bdf8; width: 13px; }
+  .vb-panel {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 290px; z-index: 49;
+    background: #fff; border-right: 1px solid #e5e7eb;
+    box-shadow: 12px 0 34px rgba(0,0,0,.13);
+    transform: translateX(-105%); transition: transform .26s cubic-bezier(.4,0,.2,1);
+    padding: 22px; display: flex; flex-direction: column; gap: 14px; font-size: 13px; color: #374151;
+  }
+  .vb-panel.open { transform: translateX(0); }
+  .vb-hint {
+    position: fixed; left: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: rgba(255,255,255,.42); z-index: 48; pointer-events: none;
+  }
+
+  /* ============ 变体 C：快捷键浮层 ============ */
+  .vc-dot {
+    position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%);
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(255,255,255,.22); z-index: 50;
+  }
+  .vc-layer {
+    position: fixed; inset: 0; z-index: 60; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(15,23,42,.28); backdrop-filter: blur(3px);
+  }
+  .vc-layer.open { display: flex; }
+  .vc-card {
+    width: 460px; background: rgba(255,255,255,.97); border-radius: 14px;
+    box-shadow: 0 26px 70px rgba(0,0,0,.42); padding: 26px 28px;
+    display: flex; flex-direction: column; gap: 15px; font-size: 13.5px; color: #374151;
+  }
+
+  /* ============ 面板通用内容 ============ */
+  .p-title { font-size: 15px; font-weight: 700; color: #111827; }
+  .p-sub { font-size: 11.5px; color: #9ca3af; margin-top: -8px; }
+  .p-now {
+    background: #f8fafc; border: 1px solid #eef2f7; border-radius: 9px;
+    padding: 12px 14px; line-height: 1.85;
+  }
+  .p-now b { color: #0f172a; }
+  .p-btn {
+    margin-top: auto; padding: 12px; border-radius: 9px; text-align: center;
+    background: #38bdf8; color: #fff; font-weight: 700; cursor: pointer;
+    user-select: none;
+  }
+  .p-btn:hover { background: #0ea5e9; }
+
+  /* ============ 底部切换栏（原型专用，不属于被评估的设计） ============ */
+  .switcher {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+    z-index: 999; display: flex; align-items: center; gap: 12px;
+    background: #0f172a; color: #fff; border-radius: 999px;
+    padding: 8px 16px; font-size: 12.5px; box-shadow: 0 10px 30px rgba(0,0,0,.5);
+    user-select: none;
+  }
+  .switcher button {
+    background: none; border: none; color: #fff; font-size: 17px;
+    cursor: pointer; padding: 0 4px;
+  }
+  .switcher .sep { width: 1px; height: 18px; background: rgba(255,255,255,.22); }
+  .switcher .info { color: #94a3b8; }
+  .switcher .badge { color: #38bdf8; font-weight: 700; }
+  .switcher .help { color: #64748b; cursor: help; }
+</style>
+</head>
+<body>
+
+<!-- ============ 模拟办公环境 ============ -->
+<div class="office">
+  <div class="office-bar">
+    <span class="dot" style="background:#ff5f57"></span>
+    <span class="dot" style="background:#febc2e"></span>
+    <span class="dot" style="background:#28c840"></span>
+    <span class="office-name">毕业论文初稿.docx — 写作中</span>
+  </div>
+  <div class="office-main">
+    <div class="office-side">
+      摘要<br>第一章 绪论<br>&nbsp;&nbsp;1.1 研究背景<br>&nbsp;&nbsp;1.2 研究意义<br>第二章 相关技术<br>第三章 系统设计<br>第四章 系统实现
+    </div>
+    <div class="office-doc">
+      <h1>第三章 系统设计</h1>
+      <p>本系统采用前后端分离的架构，前端负责桌宠形象的渲染与用户交互，后端负责任务数据的存储与 AI 能力的调度。</p>
+      <p>在交互层面，系统需要解决的核心矛盾是：桌宠需要常驻可见以提供陪伴感，同时又不能干扰用户正在进行的工作。这一矛盾决定了「存在形态」是本系统最关键的设计决策之一。</p>
+      <p class="dim">（这块文字是为了给桌宠一个真实的办公背景。请在这片文字之上评估三个变体：它挡不挡视线、你需不需要挪开它、叫它出来要几步。）</p>
+      <p>考虑到用户在日常工作中需要频繁切换任务，助手应当在任意时刻都能被快速唤起，且唤起过程不应打断当前的工作流。因此，唤出路径的长度是关键指标。</p>
+      <p>本章后续将分别讨论桌面存在形态、唤出交互、以及数据持久化三部分的设计方案。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 变体 A ============ -->
+<div id="viewA">
+  <div class="va-pet" id="vaPet" title="点我">
+    <div class="va-body"><span class="va-eye"></span><span class="va-eye"></span></div>
+  </div>
+  <div class="va-panel" id="vaPanel">
+    <span class="va-close" id="vaClose">×</span>
+    <div class="p-title">下午 14:20</div>
+    <div class="p-sub">当前：毕业论文初稿.docx</div>
+    <div class="p-now">
+      <b>你现在在做</b><br>第三章 系统设计<br><br>
+      <b>下一步</b><br>把"存在形态"这一段写完（约 300 字）
+    </div>
+    <div class="p-btn">就写这一段</div>
+  </div>
+</div>
+
+<!-- ============ 变体 B ============ -->
+<div id="viewB" style="display:none">
+  <div class="vb-hint">把鼠标推到最左边</div>
+  <div class="vb-handle" id="vbHandle"></div>
+  <div class="vb-panel" id="vbPanel">
+    <span class="va-close" id="vbClose">×</span>
+    <div class="p-title" style="margin-top:4px">待办 · 今天</div>
+    <div class="p-sub">3 件，按顺序</div>
+    <div class="p-now">
+      <b>1. 第三章系统设计</b>（进行中）<br>
+      <b>2. 跑一遍数据</b><br>
+      <b>3. 给导师回邮件</b>
+    </div>
+    <div class="p-btn">继续第 1 件</div>
+  </div>
+</div>
+
+<!-- ============ 变体 C ============ -->
+<div id="viewC" style="display:none">
+  <div class="vc-dot" title="我在这儿"></div>
+  <div class="vc-layer" id="vcLayer">
+    <div class="vc-card">
+      <div class="p-title">要我做什么？</div>
+      <div class="p-sub">Esc 关掉</div>
+      <div class="p-now">
+        <b>上次停在这里</b><br>第三章 系统设计 · "存在形态"这一段<br><br>
+        <b>如果只想动一点点</b><br>就写这一段，别开第四章
+      </div>
+      <div class="p-btn" id="vcGo">开始</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 底部切换栏 ============ -->
+<div class="switcher">
+  <button id="prev" title="上一个变体（←）">‹</button>
+  <span><span class="badge" id="vName"></span> · 唤出 <span id="vSteps"></span> · <span class="info" id="vVis"></span></span>
+  <button id="next" title="下一个变体（→）">›</button>
+  <span class="sep"></span>
+  <span class="help" title="原型说明见文件顶部注释。浏览器无法验证全局快捷键、跨应用置顶、托盘常驻——那些留给阶段 4 的技术选型。">?</span>
+</div>
+
+<script>
+(function () {
+  var META = {
+    A: { name: 'A 角落挂件', steps: '1 步', vis: '常驻可见 74px' },
+    B: { name: 'B 边缘停靠条', steps: '2 步', vis: '平时只露 9px' },
+    C: { name: 'C 快捷键浮层', steps: '1 步', vis: '平时不可见' }
+  };
+  var ORDER = ['A', 'B', 'C'];
+  var cur = (new URLSearchParams(location.search).get('variant') || 'A').toUpperCase();
+  if (ORDER.indexOf(cur) === -1) cur = 'A';
+
+  var nameEl = document.getElementById('vName');
+  var stepsEl = document.getElementById('vSteps');
+  var visEl = document.getElementById('vVis');
+
+  function render() {
+    ['A', 'B', 'C'].forEach(function (k) {
+      document.getElementById('view' + k).style.display = (k === cur ? 'block' : 'none');
+    });
+    closeAll();
+    nameEl.textContent = META[cur].name;
+    stepsEl.textContent = META[cur].steps;
+    visEl.textContent = META[cur].vis;
+    var url = new URL(location.href);
+    url.searchParams.set('variant', cur);
+    history.replaceState(null, '', url);
+  }
+
+  function closeAll() {
+    document.getElementById('vaPanel').classList.remove('open');
+    document.getElementById('vbPanel').classList.remove('open');
+    document.getElementById('vbHandle').classList.remove('on');
+    document.getElementById('vcLayer').classList.remove('open');
+  }
+
+  function go(step) {
+    var i = ORDER.indexOf(cur);
+    cur = ORDER[(i + step + ORDER.length) % ORDER.length];
+    render();
+  }
+
+  document.getElementById('prev').onclick = function () { go(-1); };
+  document.getElementById('next').onclick = function () { go(1); };
+
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.key === 'ArrowLeft') { go(-1); }
+    if (e.key === 'ArrowRight') { go(1); }
+  });
+
+  /* ---- 变体 A：点宠物唤出 ---- */
+  var vaPet = document.getElementById('vaPet');
+  var vaPanel = document.getElementById('vaPanel');
+  vaPet.onclick = function (e) {
+    e.stopPropagation();
+    vaPanel.classList.toggle('open');
+  };
+  document.getElementById('vaClose').onclick = function () { vaPanel.classList.remove('open'); };
+
+  /* ---- 变体 B：鼠标推向边缘唤出 ---- */
+  var vbHandle = document.getElementById('vbHandle');
+  var vbPanel = document.getElementById('vbPanel');
+  vbHandle.onmouseenter = function () {
+    vbHandle.classList.add('on');
+    vbPanel.classList.add('open');
+  };
+  vbPanel.onmouseleave = function () {
+    vbPanel.classList.remove('open');
+    vbHandle.classList.remove('on');
+  };
+  document.getElementById('vbClose').onclick = function () {
+    vbPanel.classList.remove('open');
+    vbHandle.classList.remove('on');
+  };
+
+  /* ---- 变体 C：快捷键唤出 ---- */
+  var vcLayer = document.getElementById('vcLayer');
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey && e.code === 'Space') || (e.altKey && e.key.toLowerCase() === 'k')) {
+      e.preventDefault();
+      vcLayer.classList.toggle('open');
+    }
+    if (e.key === 'Escape') { vcLayer.classList.remove('open'); }
+  });
+  vcLayer.onclick = function () { vcLayer.classList.remove('open'); };
+  document.getElementById('vcGo').onclick = function (e) {
+    e.stopPropagation();
+    vcLayer.classList.remove('open');
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

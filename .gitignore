@@ -1,0 +1,43 @@
+# Flutter / Dart
+build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+*.g.dart.lock
+app/windows/flutter/ephemeral/
+
+# 本地状态与过程档案
+docs/history-session/
+docs/.mcp-probe/
+.mcp-probe-kit/
+
+# AI 辅助工具链（克隆后按需重跑 init_project_context 生成，不进仓库）
+.agents/
+.codebuddy/
+skills-lock.json
+
+# 素材原图库：两份 resources 逐字节重复，且 pubspec 只声明 assets/桌宠/ 这一层，运行时只用 app/assets 那三张
+/resources/
+/assets/桌宠/resources/
+/桌宠收起态.png
+
+# 打包产物
+/dist/
+
+# 原型服务器缓存
+prototype/__pycache__/
+prototype/*.pyc
+
+# 编辑器
+.idea/
+.vscode/
+*.iml
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 安装包与临时文件
+*.zip
+*.log

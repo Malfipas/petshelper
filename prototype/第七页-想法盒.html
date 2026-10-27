@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>第 7 页 · 想法盒</title>
+<style>
+  :root{
+    --bg1:#eef2f7; --bg2:#dfe6ef;
+    --ink:#1f2937; --ink2:#6b7686; --ink3:#9aa5b4;
+    --line:#e3e9f2; --line2:#c8d3e2;
+    --accent:#2563eb; --accent-soft:#eef3fe;
+    --f:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f);color:var(--ink);overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+
+  .hud{position:fixed;left:22px;top:16px;z-index:40;display:flex;flex-direction:column;
+    align-items:flex-start;gap:8px;max-width:560px}
+  .hud button,.hud a{min-height:34px;display:inline-flex;align-items:center;padding:6px 11px;font-size:13px;
+    font-family:var(--f);color:var(--ink);text-decoration:none;background:rgba(255,255,255,.92);
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .hud button:hover,.hud a:hover{background:#fff}
+  .hud button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:8px 4px}
+  .hud-panel{display:flex;flex-wrap:wrap;gap:8px;padding:8px;max-width:520px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line2);border-radius:10px}
+  .hud.collapsed .hud-panel{display:none}
+
+  .app{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:70vw;height:70vh;min-width:880px;min-height:560px;z-index:28;
+    display:flex;flex-direction:column;padding:16px 18px 18px;
+    background:#f2f6fc;border:1px solid var(--line2);border-radius:18px;
+    box-shadow:0 28px 70px rgba(30,50,80,.22)}
+
+  .tabs{display:flex;gap:8px;align-items:center;padding-left:4px;margin-bottom:8px}
+  .tab{min-height:38px;padding:0 20px;font-size:14px;font-family:var(--f);color:var(--ink2);
+    background:transparent;border:1px solid transparent;border-radius:12px;cursor:pointer}
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:#fff;border-color:var(--line2);color:var(--ink);font-weight:600;
+    box-shadow:0 2px 8px rgba(30,50,80,.08)}
+
+  .sheet{flex:1;min-height:0;background:#fff;border:1px solid var(--line2);border-radius:14px;
+    padding:20px 24px;overflow:hidden}
+  .fb-split{display:grid;grid-template-columns:24% 1fr;height:100%;min-height:0}
+
+  /* 左：分类 */
+  .fb-cats{display:flex;flex-direction:column;min-height:0;padding-right:18px;border-right:1px solid var(--line)}
+  .fb-cats h4{margin:2px 0 10px;font-size:12px;font-weight:600;color:var(--ink3)}
+  .fb-catlist{overflow:auto;min-height:0}
+  .fb-cat{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;margin-bottom:2px;
+    border-left:2px solid transparent;border-radius:0 8px 8px 0;cursor:pointer;font-size:13px;color:var(--ink2)}
+  .fb-cat:hover{background:#f6f8fc;color:var(--ink)}
+  .fb-cat.on{background:var(--accent-soft);border-left-color:var(--accent);color:var(--accent);font-weight:600}
+  .fb-cat .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fb-cat .c{font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums}
+  .fb-cat.on .c{color:var(--accent)}
+  .fb-cat .ren{font-size:11px;color:var(--ink3);background:transparent;border:0;cursor:pointer;padding:0;opacity:0}
+  .fb-cat:hover .ren{opacity:1}
+  .fb-cat .ren:hover{color:var(--accent)}
+  .fb-rename{width:100%;height:26px;padding:0 8px;font-size:12px;font-family:var(--f);color:var(--ink);
+    background:#fff;border:1px solid var(--accent);border-radius:6px;outline:none}
+  .fb-nokey{margin-top:auto;padding-top:12px;font-size:11px;color:var(--ink3);line-height:1.7}
+
+  /* 右：想法 */
+  .fb-main{display:flex;flex-direction:column;min-height:0;padding-left:20px}
+  .fb-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .fb-head h3{margin:0;font-size:18px;font-weight:600}
+  .fb-head .c{font-size:12px;color:var(--ink3)}
+  .fb-head .sp{flex:1}
+  .fb-new{height:34px;padding:0 14px;font-size:13px;font-family:var(--f);color:var(--accent);background:#fff;
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .fb-new:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .fb-list{flex:1;min-height:0;overflow:auto;padding-right:4px}
+
+  .fb-idea{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;
+    transition:border-color .14s,box-shadow .14s,transform .14s}
+  .fb-idea:hover{border-color:#c3d1e4;box-shadow:0 4px 14px rgba(30,50,80,.06)}
+  .fb-idea.editing{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .fb-idea .t{font-size:15px;font-weight:600;line-height:1.45;margin-bottom:4px}
+  .fb-idea .b{font-size:13px;line-height:1.7;color:var(--ink2);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .fb-foot{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .fb-foot .at{font-size:12px;color:var(--ink3)}
+  .fb-foot .sp{flex:1}
+  .fb-tag{font-size:11px;color:var(--accent);background:var(--accent-soft);border:1px solid #cfdcfb;
+    border-radius:6px;padding:1px 7px}
+  .fb-tag.none{color:var(--ink3);background:#f6f8fc;border-color:var(--line)}
+
+  .fb-in-title{width:100%;height:38px;padding:0 11px;font-size:15px;font-family:var(--f);font-weight:600;
+    color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:10px;outline:none}
+  .fb-in-title:focus{border-color:var(--accent)}
+  .fb-in-body{width:100%;min-height:88px;margin-top:8px;padding:9px 11px;font-size:13px;line-height:1.7;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:10px;
+    outline:none;resize:vertical}
+  .fb-in-body:focus{border-color:var(--accent)}
+  .fb-editrow{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .fb-editrow select{height:30px;padding:0 6px;font-size:12px;font-family:var(--f);color:var(--ink2);
+    background:#fff;border:1px solid var(--line2);border-radius:8px}
+  .fb-cat-off{font-size:12px;color:var(--ink3)}
+  .fb-acts{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .fb-acts button{height:30px;padding:0 12px;font-size:12px;font-family:var(--f);border-radius:8px;cursor:pointer}
+  .fb-save{color:#fff;background:var(--accent);border:0}
+  .fb-save:disabled{opacity:.45;cursor:not-allowed}
+  .fb-del{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+  .fb-del:hover{color:#d94a3d;border-color:#f0c9c4}
+  .fb-del.armed{color:#fff;background:#d94a3d;border-color:#d94a3d}
+  .fb-cancel{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+
+  .fb-empty{display:none;padding:50px 0;text-align:center;color:var(--ink3);font-size:13px}
+  .fb-empty.on{display:block}
+  .fb-empty b{display:block;font-size:15px;color:var(--ink2);margin-bottom:10px;font-weight:600}
+
+  .console{position:fixed;left:22px;bottom:16px;width:380px;max-height:130px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.7;color:#3c4657;background:rgba(255,255,255,.88);
+    border:1px solid var(--line2);border-radius:10px}
+  .console b{font-weight:600;color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<div class="hud collapsed" id="hud">
+  <button class="hud-toggle" id="hudToggle">演示控制</button>
+  <div class="hud-panel">
+    <span class="tag">第 7 页</span>
+    <button data-act="key">切换 key 状态</button>
+    <button data-act="add">加三条想法</button>
+    <button data-act="clear">清空想法</button>
+    <button data-act="reset">重置演示数据</button>
+    <a href="第一页-桌面常驻态.html">第 1 页</a>
+    <a href="第二页-悬停小面板.html">第 2 页</a>
+    <a href="第三页-主界面.html">第 3 页</a>
+    <a href="第四页-独立事项.html">第 4 页</a>
+    <a href="第五页-我的记录.html">第 5 页</a>
+    <a href="第六页-我的项目.html">第 6 页</a>
+  </div>
+</div>
+
+<div class="app">
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-tab="solo">独立事项</button>
+    <button class="tab" data-tab="projects">我的项目</button>
+    <button class="tab" data-tab="records">我的记录</button>
+    <button class="tab on" data-tab="ideas">想法盒</button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <section class="sheet">
+    <div class="fb-split">
+      <aside class="fb-cats">
+        <h4>分类</h4>
+        <div class="fb-catlist" id="catList"></div>
+        <div class="fb-nokey" id="catNote" style="display:none">没配 API key，AI 不再自动归类。已有分类还在，想法照常记。</div>
+      </aside>
+
+      <main class="fb-main">
+        <div class="fb-head">
+          <h3 id="viewTitle">全部想法</h3>
+          <span class="c" id="viewCount"></span>
+          <span class="sp"></span>
+          <button class="fb-new" id="newBtn">新建想法</button>
+        </div>
+        <div class="fb-list" id="list"></div>
+        <div class="fb-empty" id="empty">
+          <b>这里还没有想法</b>
+          点右上角「新建想法」记一条
+        </div>
+      </main>
+    </div>
+  </section>
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：想法盒已打开</div></div>
+
+<script>
+(function(){
+  var hasKey=localStorage.getItem('aiKey')==='1';
+  var logBox=document.getElementById('log');
+  function log(n,x){
+    var d=document.createElement('div');
+    d.innerHTML='<b>'+n+'</b>'+(x?' · '+x:'');
+    logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight;
+  }
+
+  /* ---------- 数据 ---------- */
+  var CATS=[
+    {id:'c1', name:'产品灵感'},
+    {id:'c2', name:'待验证'},
+    {id:'c3', name:'技术笔记'}
+  ];
+  var IDEAS=[
+    {id:'i1', title:'想法盒只放没成形的念头', body:'成形的都进项目了，这里留着刚冒出来的。分类交给 AI，我只管写。',
+     catId:'c1', at:'今天 10:20', classified:true},
+    {id:'i2', title:'记录页按投入着色', body:'日历格子底下那条色带挺好用，但四段封顶之后要看图例才知道谁是谁。',
+     catId:'c1', at:'昨天 21:05', classified:true},
+    {id:'i3', title:'每个想法只归一类', body:'如果一个想法同时属于两处，硬分会让两边都不完整，不如只放一处，需要时再搬。',
+     catId:'c1', at:'3 天前', classified:true},
+    {id:'i4', title:'睡前随手记三句', body:'今天改不动功能了，先记着：随手记要能贴着事务写。',
+     catId:'c2', at:'今天 23:40', classified:true},
+    {id:'i5', title:'把「待验证」单独拆出来', body:'现在验证类想法和产品灵感混在一起，回头翻很费劲。',
+     catId:'c2', at:'昨天 12:10', classified:true},
+    {id:'i6', title:'代码片段也能存', body:'遇到一段好用的正则，先贴进想法盒，回头再归到技术笔记。',
+     catId:'c3', at:'5 天前', classified:true},
+    {id:'i7', title:'接口超时怎么重试', body:'先记个问号，等真踩到再写。',
+     catId:'c3', at:'上周', classified:true},
+    {id:'i8', title:'关于桌宠动效的一点想法', body:'走两步的动画比站着好看，但会不会太吵。',
+     catId:null, at:'今天 08:30', classified:false}
+  ];
+
+  var viewCat='all';        // 当前看的分类
+  var editingId=null;       // 正在编辑的想法
+  var creating=false;       // 正在新建
+  var renamingId=null;      // 正在改名的分类
+  var seq=100;
+
+  function catById(id){
+    for(var i=0;i<CATS.length;i++) if(CATS[i].id===id) return CATS[i];
+    return null;
+  }
+  function catName(id){ var c=catById(id); return c?c.name:''; }
+  function catCount(id){
+    return IDEAS.filter(function(i){ return i.catId===id; }).length;
+  }
+
+  /* ---------- 分类（原型里用关键词模拟一次 AI 解析） ---------- */
+  var RULES=[
+    {catId:'c1', words:['产品','功能','需求','用户','页面','想法盒','记录页','设计']},
+    {catId:'c2', words:['验证','要不要','不确定','问号','先记','试试','值得']},
+    {catId:'c3', words:['代码','正则','接口','性能','部署','脚本','技术','动画']}
+  ];
+  function aiClassify(idea){
+    if(!hasKey) return null;
+    var text=(idea.title||'')+' '+(idea.body||'');
+    for(var i=0;i<RULES.length;i++){
+      for(var j=0;j<RULES[i].words.length;j++){
+        if(text.indexOf(RULES[i].words[j])>=0) return RULES[i].catId;
+      }
+    }
+    return null;
+  }
+
+  /* ---------- 渲染：左栏分类 ---------- */
+  function renderCats(){
+    var box=document.getElementById('catList');
+    box.innerHTML='';
+
+    var all=document.createElement('div');
+    all.className='fb-cat'+(viewCat==='all'?' on':'');
+    var an=document.createElement('span'); an.className='n'; an.textContent='全部';
+    var ac=document.createElement('span'); ac.className='c'; ac.textContent=IDEAS.length+' 条';
+    all.appendChild(an); all.appendChild(ac);
+    all.addEventListener('click', function(){ viewCat='all'; render(); });
+    box.appendChild(all);
+
+    if(!hasKey){
+      document.getElementById('catNote').style.display='';
+    } else {
+      document.getElementById('catNote').style.display='none';
+    }
+
+    CATS.forEach(function(c){
+      var row=document.createElement('div');
+      row.className='fb-cat'+(viewCat===c.id?' on':'');
+      if(renamingId===c.id){
+        var input=document.createElement('input');
+        input.className='fb-rename'; input.value=c.name;
+        input.addEventListener('keydown', function(e){
+          if(e.key==='Enter'){ e.stopPropagation(); commitRename(c.id, input.value); }
+          if(e.key==='Escape'){ e.stopPropagation(); renamingId=null; render(); }
+        });
+        input.addEventListener('click', function(e){ e.stopPropagation(); });
+        row.appendChild(input);
+        setTimeout(function(){ input.focus(); input.select(); },0);
+        box.appendChild(row);
+        return;
+      }
+      var n=document.createElement('span'); n.className='n'; n.textContent=c.name;
+      var cnt=document.createElement('span'); cnt.className='c'; cnt.textContent=catCount(c.id)+' 条';
+      var ren=document.createElement('button'); ren.className='ren'; ren.textContent='重命名';
+      ren.addEventListener('click', function(e){ e.stopPropagation(); renamingId=c.id; render(); });
+      row.appendChild(n); row.appendChild(cnt); row.appendChild(ren);
+      row.addEventListener('click', function(){ viewCat=c.id; render(); });
+      box.appendChild(row);
+    });
+  }
+
+  function commitRename(id, name){
+    var v=name.trim();
+    if(v){
+      var c=catById(id);
+      if(c) c.name=v;      // 想法只存 catId，改名不用动想法
+    }
+    renamingId=null; render();
+    log('分类改名', v||'（未改）');
+  }
+
+  /* ---------- 渲染：想法列表 ---------- */
+  function renderList(){
+    var box=document.getElementById('list');
+    box.innerHTML='';
+
+    var view=IDEAS.filter(function(i){
+      if(viewCat==='all') return true;
+      return i.catId===viewCat;
+    });
+
+    document.getElementById('viewTitle').textContent = viewCat==='all' ? '全部想法' : catName(viewCat);
+    document.getElementById('viewCount').textContent = view.length+' 条';
+
+    if(creating){
+      box.appendChild(editorCard(null));
+    }
+    view.forEach(function(idea){
+      box.appendChild(editingId===idea.id ? editorCard(idea) : readCard(idea));
+    });
+
+    var none = !creating && view.length===0;
+    document.getElementById('empty').classList.toggle('on', none);
+  }
+
+  function readCard(idea){
+    var el=document.createElement('div');
+    el.className='fb-idea';
+    var t=document.createElement('div'); t.className='t'; t.textContent=idea.title;
+    var b=document.createElement('div'); b.className='b'; b.textContent=idea.body||'';
+    var foot=document.createElement('div'); foot.className='fb-foot';
+    var at=document.createElement('span'); at.className='at'; at.textContent=idea.at;
+    var sp=document.createElement('span'); sp.className='sp';
+    var tag=document.createElement('span');
+    if(idea.catId){ tag.className='fb-tag'; tag.textContent=catName(idea.catId); }
+    else { tag.className='fb-tag none'; tag.textContent=hasKey?'待分类':'未分类'; }
+    foot.appendChild(at); foot.appendChild(sp); foot.appendChild(tag);
+    el.appendChild(t); el.appendChild(b); el.appendChild(foot);
+    el.addEventListener('click', function(){ editingId=idea.id; render(); });
+    return el;
+  }
+
+  function editorCard(idea){
+    var isNew = !idea;
+    var el=document.createElement('div');
+    el.className='fb-idea editing';
+
+    var title=document.createElement('input');
+    title.className='fb-in-title'; title.type='text'; title.maxLength=40;
+    title.placeholder='想法标题';
+    title.value = isNew? '' : idea.title;
+
+    var body=document.createElement('textarea');
+    body.className='fb-in-body'; body.placeholder='想到什么写什么，一两句也行';
+    body.value = isNew? '' : (idea.body||'');
+
+    var row=document.createElement('div'); row.className='fb-editrow';
+
+    var sel=document.createElement('select');
+    var none2=document.createElement('option'); none2.value=''; none2.textContent='不分类';
+    sel.appendChild(none2);
+    CATS.forEach(function(c){
+      var o=document.createElement('option'); o.value=c.id; o.textContent=c.name;
+      if(idea && idea.catId===c.id) o.selected=true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('click', function(e){ e.stopPropagation(); });
+    row.appendChild(sel);
+    if(!hasKey){
+      // 没配 key：分类还在，AI 归类停了
+      var off=document.createElement('span'); off.className='fb-cat-off';
+      off.textContent='未配置 API key，AI 不再自动归类';
+      row.appendChild(off);
+    }
+
+    var acts=document.createElement('div'); acts.className='fb-acts';
+    var save=document.createElement('button'); save.className='fb-save'; save.textContent='存下';
+    var del=document.createElement('button'); del.className='fb-del'; del.textContent='删除';
+    var cancel=document.createElement('button'); cancel.className='fb-cancel'; cancel.textContent='取消';
+
+    function collect(){
+      return {title:title.value.trim(), body:body.value.trim()};
+    }
+    function refresh(){
+      save.disabled = !title.value.trim();   // 标题必填
+    }
+    title.addEventListener('input', refresh);
+    refresh();
+
+    save.addEventListener('click', function(e){
+      e.stopPropagation();
+      var v=collect();
+      if(!v.title) return;
+      if(isNew){
+        seq+=10;
+        var idea2={id:'n'+seq, title:v.title, body:v.body, catId:null, at:'刚刚', classified:false};
+        IDEAS.unshift(idea2);
+        creating=false; editingId=null;
+        render();
+        log('新建想法', v.title);
+        classifyLater(idea2);
+      } else {
+        var cat = hasKey ? (sel? sel.value : '') : idea.catId;
+        idea.title=v.title; idea.body=v.body; idea.catId=cat||null;
+        editingId=null;
+        render();
+        log('改过想法', v.title);
+      }
+    });
+
+    if(!isNew){
+      var armed=false, armTimer=null;
+      del.addEventListener('click', function(e){
+        e.stopPropagation();
+        if(!armed){
+          armed=true; del.textContent='确认删除'; del.classList.add('armed');
+          armTimer=setTimeout(function(){ armed=false; del.textContent='删除'; del.classList.remove('armed'); }, 3000);
+          return;
+        }
+        clearTimeout(armTimer);
+        IDEAS=IDEAS.filter(function(x){ return x.id!==idea.id; });
+        editingId=null;
+        render();
+        log('删除想法', idea.title);
+      });
+    }
+
+    cancel.addEventListener('click', function(e){
+      e.stopPropagation();
+      creating=false; editingId=null; render();
+    });
+
+    acts.appendChild(save);
+    if(!isNew) acts.appendChild(del);
+    acts.appendChild(cancel);
+    row.appendChild(acts);
+
+    el.appendChild(title); el.appendChild(body); el.appendChild(row);
+    el.addEventListener('click', function(e){ e.stopPropagation(); });
+    return el;
+  }
+
+  // 保存后让 AI 归类一次：只分一次，之后编辑不再重分
+  function classifyLater(idea){
+    if(!hasKey) return;
+    setTimeout(function(){
+      if(idea.classified) return;
+      var cid=aiClassify(idea);
+      if(cid){ idea.catId=cid; idea.classified=true; }
+      else { idea.classified=true; }
+      render();
+      log('AI 归类', idea.title+' → '+(cid?catName(cid):'没归上'));
+    }, 400);
+  }
+
+  function render(){
+    renderCats();
+    renderList();
+  }
+
+  /* ---------- 顶栏动作 ---------- */
+  document.getElementById('newBtn').addEventListener('click', function(){
+    creating=true; editingId=null; viewCat='all';
+    render();
+    var t=document.querySelector('.fb-idea.editing .fb-in-title');
+    if(t) t.focus();
+  });
+
+  /* ---------- 控制条 ---------- */
+  document.querySelector('.hud').addEventListener('click', function(e){
+    var act=e.target.dataset.act; if(!act) return;
+    if(act==='key'){
+      hasKey=!hasKey;
+      localStorage.setItem('aiKey', hasKey?'1':'0');
+      e.target.textContent = hasKey?'已配置 key':'未配置 key';
+      e.target.classList.toggle('on', hasKey);
+      render();
+      log(hasKey?'已配置模型 key':'未配置模型 key','分类'+(hasKey?'照常':'停掉'));
+    }
+    if(act==='add'){
+      ['把想法框做成能拖的','给想法加个到期日','记录页和想法盒能互相跳转'].forEach(function(t, i){
+        seq+=10;
+        IDEAS.unshift({id:'x'+seq, title:t, body:'随手记一条，还没想透。', catId:null, at:'刚刚', classified:false});
+      });
+      render(); log('加三条想法','');
+    }
+    if(act==='clear'){ IDEAS=[]; creating=false; editingId=null; render(); log('清空想法',''); }
+    if(act==='reset'){ location.reload(); }
+  });
+
+  document.getElementById('hudToggle').addEventListener('click', function(){
+    var collapsed=document.getElementById('hud').classList.toggle('collapsed');
+    this.textContent = collapsed?'演示控制':'收起演示';
+  });
+
+  document.getElementById('tabs').addEventListener('click', function(e){
+    var b=e.target.closest('.tab'); if(!b) return;
+    var btns=this.querySelectorAll('.tab');
+    for(var i=0;i<btns.length;i++) btns[i].classList.toggle('on', btns[i]===b);
+    if(b.dataset.tab!=='ideas'){
+      log('切到标签', b.textContent+'（这一页还没做）');
+      setTimeout(function(){
+        for(var j=0;j<btns.length;j++) btns[j].classList.toggle('on', btns[j].dataset.tab==='ideas');
+      }, 600);
+    }
+  });
+
+  /* ---------- 启动 ---------- */
+  var kb=document.querySelector('.hud button[data-act="key"]');
+  if(kb){ kb.textContent=hasKey?'已配置 key':'未配置 key'; kb.classList.toggle('on', hasKey); }
+  render();
+})();
+</script>
+</body>
+</html>

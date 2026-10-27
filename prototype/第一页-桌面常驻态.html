@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方向 A · 系统原生</title>
+<style>
+  :root{
+    --bg1:#eef2f7; --bg2:#dfe6ef;
+    --glass:rgba(255,255,255,.72);
+    --line:#c9d4e3; --ink:#1f2937; --ink2:#5b6676;
+    --accent:#2563eb; --accent-soft:#e8effd;
+    --r:10px; --shadow:0 12px 32px rgba(30,50,80,.16);
+    --f:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f);color:var(--ink);background:linear-gradient(160deg,var(--bg1),var(--bg2));overflow:hidden}
+
+  /* 桌面与示例窗口 */
+  .win{position:absolute;left:120px;top:110px;width:min(900px,64vw);height:auto;background:#fff;
+       border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  .win .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f4f7fb;border-bottom:1px solid var(--line)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .win .t{font-size:13px;color:var(--ink2);margin-left:6px}
+  .win .body{padding:26px 30px}
+  .win h1{font-size:19px;margin:0 0 14px;font-weight:600}
+  .rule{height:12px;border-radius:6px;background:#eef1f6;margin:10px 0}
+  .rule.s{width:62%}
+  .rule.m{width:84%}
+
+  /* 控制条：原型自用，不属于产品 */
+  .hud{position:fixed;left:22px;top:20px;z-index:40;display:flex;flex-wrap:wrap;gap:8px;max-width:520px}
+  .hud button{min-height:36px;padding:7px 12px;font-size:13px;font-family:var(--f);color:var(--ink);
+    background:var(--glass);border:1px solid var(--line);border-radius:8px;cursor:pointer;backdrop-filter:blur(8px)}
+  .hud button:hover{background:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:8px 4px}
+
+  /* 宠物 */
+  .pet{position:fixed;right:0;z-index:30;cursor:pointer;user-select:none;
+       width:20vw;height:20vh;display:flex;align-items:flex-end;justify-content:flex-end;
+       transition:transform .22s ease}
+  .pet img{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
+  .pet .collapsed{animation:breathe 4.2s ease-in-out infinite;transform-origin:bottom center}
+  .pet .expanded{display:none}
+  .pet.is-expanded{width:30vw;height:30vh}
+  .pet.is-expanded .collapsed{display:none}
+  .pet.is-expanded .expanded{display:block}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
+  /* 悬停小面板 */
+  .panel{position:fixed;z-index:32;width:30vw;max-height:40vh;overflow-y:auto;padding:16px;background:var(--glass);
+    border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(14px);
+    opacity:0;transform:translateX(8px);pointer-events:none;
+    transition:opacity .16s ease,transform .16s ease,top .18s ease}
+  .panel.on{opacity:1;transform:none;pointer-events:auto}
+  .panel .pname{font-size:15px;font-weight:600}
+  .panel .track{display:flex;gap:5px;margin:10px 0 12px}
+  .panel .track i{flex:1;height:4px;border-radius:2px;background:#d8e0ec}
+  .panel .track i.done{background:var(--accent)}
+  .panel .step{font-size:14px;line-height:1.6;margin:0 0 4px}
+  .panel .meta{font-size:12px;color:var(--ink2);margin-bottom:12px}
+  .panel .ai{display:flex;gap:8px;margin-bottom:12px;align-items:flex-end}
+  .panel .ai textarea{flex:1;min-height:36px;max-height:104px;padding:8px 10px;font-size:13px;line-height:20px;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;
+    resize:none;overflow-y:auto;outline:none;transition:border-color .15s}
+  .panel .ai textarea:focus{border-color:var(--accent)}
+  .panel .ai button{display:flex;align-items:center;justify-content:center;width:42px;min-height:36px;
+    padding:0;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink2);cursor:pointer;
+    transition:color .15s,border-color .15s,background .15s}
+  .panel .ai button:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+  .panel .go{width:100%;min-height:44px;border:0;border-radius:9px;background:var(--accent);color:#fff;
+    font-size:15px;font-family:var(--f);cursor:pointer}
+  .panel .go:hover{filter:brightness(1.06)}
+  .panel .skip{margin-top:8px;text-align:center;font-size:12px;color:var(--ink2);cursor:pointer}
+
+  /* 主界面 */
+  .main{position:fixed;right:0;top:0;height:100%;width:720px;z-index:28;padding:28px 30px 28px 32px;
+    background:rgba(250,252,255,.92);border-left:1px solid var(--line);backdrop-filter:blur(18px);
+    transform:translateX(100%);transition:transform .26s ease;overflow:auto}
+  .main.on{transform:none}
+  .main header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .main h2{font-size:16px;margin:0;font-weight:600}
+  .newp{min-height:36px;padding:0 12px;font-size:13px;border:1px solid var(--line);border-radius:8px;
+    background:#fff;cursor:pointer}
+  .cards{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
+  .card{flex:0 0 198px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:var(--r);
+    transition:box-shadow .2s,outline-color .2s;outline:2px solid transparent;outline-offset:3px}
+  .card.flash{outline-color:var(--accent);box-shadow:0 8px 20px rgba(37,99,235,.16)}
+  .card .cn{font-size:14px;font-weight:600;margin-bottom:10px}
+  .card .pct{font-size:26px;font-weight:600;color:var(--accent);letter-spacing:-.5px}
+  .card .pct small{font-size:12px;color:var(--ink2);font-weight:400;margin-left:2px}
+  .card .nx{font-size:13px;color:var(--ink2);line-height:1.5;margin-top:10px;min-height:38px}
+  .mods{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+  .mods a{display:flex;align-items:center;min-height:44px;padding:0 16px;font-size:13px;color:var(--ink);
+    text-decoration:none;background:#fff;border:1px solid var(--line);border-radius:8px}
+  .mods a:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* 气泡 */
+  .bubbles{position:fixed;z-index:34;display:none;flex-direction:column;align-items:flex-end;gap:8px;
+    width:25vw;pointer-events:none}
+  .bubbles.on{display:flex}
+  .bubble{width:100%;max-height:30vh;overflow-y:auto;padding:13px 15px;border-radius:12px;background:#fff;
+    border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px;line-height:1.6;
+    pointer-events:auto;animation:bubbleIn .18s ease}
+  @keyframes bubbleIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .bubble.deadline{border-left:4px solid #d94a3d}
+  .bubble .bt{font-size:12px;color:#d94a3d;font-weight:600;margin-bottom:6px}
+  .bubble.report .bt{color:var(--accent)}
+  .bubble .bname{font-size:14px;font-weight:600;line-height:1.5}
+  .bubble .brow{display:flex;gap:8px;align-items:baseline;font-size:13px;padding:7px 0;
+    border-top:1px dashed var(--line);white-space:nowrap}
+  .bubble .brow:first-of-type{border-top:0;padding-top:2px}
+  .bubble .brow b{font-weight:600}
+  .bubble .brow span{color:var(--ink2);font-variant-numeric:tabular-nums}
+  .bubble .bx{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;
+    font-size:12px;color:var(--ink2)}
+  .bubble .bx .acts{display:flex;gap:6px;flex:0 0 auto}
+  .bubble .bx button{min-height:30px;padding:0 10px;font-size:12px;border:1px solid var(--line);
+    border-radius:6px;background:#fff;cursor:pointer;white-space:nowrap}
+  .bubble .bx button.primary{border-color:var(--accent);color:var(--accent)}
+  .bubble .bx button.primary:hover{background:var(--accent-soft)}
+
+  /* 事件日志 */
+  .console{position:fixed;left:22px;bottom:20px;width:360px;max-height:190px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.7;color:#3c4657;background:rgba(255,255,255,.86);
+    border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(8px)}
+  .console b{font-weight:600;color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* 左右贴边：宠物换到左缘时，气泡与面板翻到它右侧，主界面从左滑入 */
+  .pet.side-left{left:0;right:auto;justify-content:flex-start}
+  .pet.dragging{transition:none}
+  .bubbles.side-left{align-items:flex-start}
+  .main.from-left{right:auto;left:0;border-left:0;border-right:1px solid var(--line)}
+  .main.from-left:not(.on){transform:translateX(-100%)}
+  .hud button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* 演示控制收进抽屉：默认只留一个开关 */
+  .hud{flex-direction:column;align-items:flex-start;max-width:560px}
+  .hud-panel{display:flex;flex-wrap:wrap;gap:8px;padding:8px;max-width:520px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:10px}
+  .hud.collapsed .hud-panel{display:none}
+  .hud-toggle{background:rgba(255,255,255,.92)}
+  .ai button:disabled{opacity:.4;cursor:not-allowed}
+  .ai textarea[readonly]{background:#f4f7fb;color:var(--ink2);cursor:pointer}
+
+  /* 面板空态：没有当前事务时只留两行 */
+  .pe{display:none;padding:4px 2px 8px}
+  .pe .t{font-size:14px;font-weight:600;color:var(--ink)}
+  .pe .s{font-size:12px;color:var(--ink3);margin-top:6px}
+  .panel.empty #panelBody{display:none}
+  .panel.empty .pe{display:block}
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="bar">
+    <span class="dot" style="background:#ff5f57"></span>
+    <span class="dot" style="background:#febc2e"></span>
+    <span class="dot" style="background:#28c840"></span>
+    <span class="t">thesis.docx — 第三章</span>
+  </div>
+  <div class="body">
+    <h1>第三章 结论</h1>
+    <div class="rule m"></div><div class="rule"></div><div class="rule s"></div>
+    <div class="rule m"></div><div class="rule s"></div>
+  </div>
+</div>
+
+<div class="hud collapsed" id="hud">
+  <button class="hud-toggle" id="hudToggle">演示控制</button>
+  <div class="hud-panel">
+    <span class="tag">原型控制</span>
+    <button data-act="form">切换面板形态 A / B</button>
+    <button data-act="deadline">截止强提醒</button>
+    <button data-act="report">开机播报</button>
+    <button data-act="fullscreen">全屏降级</button>
+    <button data-act="key">未配置 key</button>
+    <button data-act="side">换到另一侧</button>
+    <button data-act="none">无当前事务</button>
+    <button data-act="reset">重置位置</button>
+    <button onclick="location.href='整体原型.html'">整体原型</button>
+  </div>
+</div>
+
+<aside class="panel" id="panel">
+  <div id="panelBody">
+  <div id="formA">
+    <div class="pname">毕业论文</div>
+    <div class="track"><i class="done"></i><i class="done"></i><i class="done"></i><i></i><i></i><i></i><i></i></div>
+    <p class="step">把第三章结论写成三句话</p>
+    <div class="meta">第 3 步 / 共 7 步 · 约 5 分钟</div>
+  </div>
+  <div id="formB" style="display:none">
+    <div class="pname">回面试邮件</div>
+    <div class="meta">独立事务 · 不属于任何项目</div>
+  </div>
+  <div class="ai">
+    <textarea id="ask" rows="1" placeholder="有什么我能帮助你的吗？"></textarea>
+    <button id="send" aria-label="发送">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21.5 2.5 10.8 21.3l-2.4-7.1-6.9-2.4z"></path>
+        <path d="M21.5 2.5 8.4 14.2"></path>
+      </svg>
+    </button>
+  </div>
+  <button class="go" id="start">开始</button>
+  <div class="skip" id="skip">不做</div>
+  </div>
+  <div class="pe" id="panelEmpty">
+    <div class="t">当前无正在进行的事务</div>
+    <div class="s">点桌宠进主界面挑一件</div>
+  </div>
+</aside>
+
+<section class="main" id="main">
+  <header>
+    <h2>我的项目</h2>
+    <button class="newp">新建项目</button>
+  </header>
+  <div class="cards">
+    <div class="card" data-name="毕业论文"><div class="cn">毕业论文</div><div class="pct">42<small>%</small></div><div class="nx">下一步：把第三章结论写成三句话</div></div>
+    <div class="card" data-name="配音练习"><div class="cn">配音练习</div><div class="pct">18<small>%</small></div><div class="nx">下一步：录一段 60 秒的开场白</div></div>
+    <div class="card" data-name="求职"><div class="cn">求职</div><div class="pct">65<small>%</small></div><div class="nx">下一步：回面试邮件，约时间</div></div>
+  </div>
+  <div class="mods">
+    <a href="#">记录与进度</a><a href="#">想法收件箱</a><a href="#">设置</a>
+  </div>
+</section>
+
+<div class="bubbles" id="bubbles"></div>
+
+<div class="pet" id="pet">
+  <img class="collapsed" src="../assets/桌宠/常驻右-240.png" alt="桌宠收起态">
+  <img class="expanded" src="../assets/桌宠/展开-360.png" alt="桌宠展开态">
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：等待操作</div></div>
+
+<script>
+(function(){
+  var pet=document.getElementById('pet'), panel=document.getElementById('panel'),
+      main=document.getElementById('main'), bubbles=document.getElementById('bubbles'),
+      logBox=document.getElementById('log'), formA=document.getElementById('formA'),
+      formB=document.getElementById('formB'), ask=document.getElementById('ask');
+
+  var hoverIn=null, hoverOut=null, expanded=false, form='A';
+
+  // 贴哪一侧：拖到哪侧松手就记哪侧；浮层、主界面方向都跟着翻
+  var SIDE = localStorage.getItem('petSide') || 'right';
+  var hasKey = localStorage.getItem('aiKey') === '1';
+  var noCurrent = false;   // 演示用：切到「没有当前事务」，面板只剩一句提示
+
+  pet.style.top = (localStorage.getItem('petTop') || Math.round(innerHeight*0.42)) + 'px';
+
+  function placeX(el, w){
+    if(SIDE==='right'){ el.style.right=(w-15)+'px'; el.style.left='auto'; }
+    else { el.style.left=(w-15)+'px'; el.style.right='auto'; }
+  }
+  // 贴哪侧换哪张图：右缘用「常驻右」，左缘用「常驻」
+  var PET_SRC={right:'../assets/桌宠/常驻右-240.png', left:'../assets/桌宠/常驻-240.png'};
+  function applySide(){
+    pet.classList.toggle('side-left', SIDE==='left');
+    bubbles.classList.toggle('side-left', SIDE==='left');
+    main.classList.toggle('from-left', SIDE==='left');
+    var img=pet.querySelector('.collapsed');
+    if(img){
+      if(img.getAttribute('src')!==PET_SRC[SIDE]) img.src=PET_SRC[SIDE];
+      img.onload=positionFloating;
+    }
+    positionFloating();
+  }
+
+  function log(name, extra){
+    var d=document.createElement('div');
+    d.innerHTML='<b>'+name+'</b>'+(extra?' · '+extra:'');
+    logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight;
+  }
+  function setExpanded(v){
+    expanded=v;
+    pet.classList.toggle('is-expanded', v);
+    log(v?'evt_appear (展开)':'evt_appear (收起)');
+  }
+  // 气泡贴着头顶往上堆，小面板在它下面接着排，谁都不盖谁
+  // 以桌宠图片本身为基准（不是那个 20% 的外框）：右偏移 = 图宽 - 15，纵向从图顶往下 5
+  var GAP=5;
+  function petImgRect(){
+    var img=pet.querySelector('.expanded');
+    if(!img || getComputedStyle(img).display==='none') img=pet.querySelector('.collapsed');
+    return img.getBoundingClientRect();
+  }
+  function positionFloating(){
+    var r=petImgRect();
+    var count=bubbles.children.length;
+    bubbles.classList.toggle('on', count>0);
+    if(count){
+      var bh=bubbles.offsetHeight;
+      var bt=Math.max(6, r.top+GAP-bh);
+      bubbles.style.top=bt+'px';
+      placeX(bubbles, r.width);
+    }
+    if(panel.classList.contains('on')){
+      var ph=panel.offsetHeight;
+      var pt=Math.max(12, r.top+GAP);
+      if(count){
+        var bb=bubbles.getBoundingClientRect().bottom;
+        if(pt < bb+GAP+6) pt = bb+GAP+6;
+      }
+      pt=Math.min(pt, innerHeight-ph-12);
+      panel.style.top=pt+'px';
+      placeX(panel, r.width);
+    }
+  }
+
+  function applyEmpty(){
+    panel.classList.toggle('empty', noCurrent);
+    positionFloating();
+  }
+
+  function openPanel(){
+    panel.classList.add('on'); log('evt_step_shown');
+    applyEmpty();
+  }
+  function closePanel(){
+    panel.classList.remove('on');
+  }
+
+  // 光标在面板里、或正在输入时不收起，避免打字打到一半窗口消失
+  var pinned=false;
+  function shouldStayOpen(){
+    return pinned || panel.matches(':hover') || pet.matches(':hover');
+  }
+  function scheduleClose(){
+    clearTimeout(hoverOut);
+    hoverOut=setTimeout(function(){ if(!shouldStayOpen()) closePanel(); }, 500);
+  }
+
+  pet.addEventListener('pointerenter', function(){
+    if(dragging || dragSuppress) return;      // 拖动期间不弹面板
+    clearTimeout(hoverOut);
+    hoverIn=setTimeout(openPanel, 300);
+  });
+  pet.addEventListener('pointerleave', function(){
+    dragSuppress=false;
+    clearTimeout(hoverIn); scheduleClose();
+  });
+  panel.addEventListener('pointerenter', function(){ clearTimeout(hoverOut); });
+  panel.addEventListener('pointerleave', function(){ scheduleClose(); });
+
+  pet.addEventListener('click', function(e){
+    if(dragMoved) return;
+    if(!expanded){ setExpanded(true); main.classList.add('on'); log('evt_panel_open','主界面滑出'); }
+    else { setExpanded(false); main.classList.remove('on'); }
+  });
+
+  // 拖拽：按住鼠标左键拖动才触发；拖动期间不弹悬停面板，松手贴到最近的一侧
+  var dragging=false, dragSuppress=false, startX=0, startY=0, startTop=0, baseLeft=0, dx=0, dragMoved=false;
+  pet.addEventListener('pointerdown', function(e){
+    if(e.button!==0) return;                 // 只认左键；右键、中键不拖
+    dragging=true; dragMoved=false; dragSuppress=true; dx=0;
+    clearTimeout(hoverIn); closePanel();     // 起手就把面板收掉
+    startX=e.clientX; startY=e.clientY;
+    startTop=parseFloat(pet.style.top)||0;
+    baseLeft=pet.getBoundingClientRect().left;
+    pet.classList.add('dragging');
+    pet.setPointerCapture(e.pointerId);
+  });
+  pet.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    dx=e.clientX-startX;
+    var dy=e.clientY-startY;
+    if(Math.abs(dx)>4 || Math.abs(dy)>4) dragMoved=true;
+    var top=Math.max(0, Math.min(innerHeight-pet.offsetHeight, startTop+dy));
+    pet.style.top=top+'px';
+    pet.style.transform='translateX('+dx+'px)';
+  });
+  pet.addEventListener('pointerup', function(){
+    if(dragging){
+      var center=baseLeft+dx+pet.offsetWidth/2;
+      var side=center<innerWidth/2?'left':'right';
+      if(side!==SIDE){ SIDE=side; log('换到'+(side==='left'?'左侧':'右侧')); }
+      localStorage.setItem('petSide', SIDE);
+      localStorage.setItem('petTop', Math.round(parseFloat(pet.style.top)||0));
+      pet.style.transform='';
+      applySide();
+      pet.classList.remove('dragging');
+    }
+    dragging=false;
+    if(!dragMoved) dragSuppress=false;         // 只是点一下，不是拖，恢复悬停
+    setTimeout(function(){dragMoved=false;},50);
+  });
+
+  document.getElementById('start').addEventListener('click', function(){
+    log('evt_start','项目=毕业论文'); closePanel();
+  });
+  document.getElementById('skip').addEventListener('click', function(){
+    log('evt_skip','悬停面板'); closePanel();
+  });
+  // 输入框按内容长高，超过四行再内部滚动
+  function autosize(){
+    ask.style.height='auto';
+    ask.style.height=Math.min(ask.scrollHeight,104)+'px';
+  }
+  ask.addEventListener('input', function(){ autosize(); positionFloating(); });
+  ask.addEventListener('focus', function(){ pinned=true; });
+  ask.addEventListener('blur', function(){ pinned=false; scheduleClose(); });
+
+  // 没配置模型 key 时，AI 入口只读、占位文字指向设置页、发送键禁用
+  function renderAi(){
+    var send=document.getElementById('send');
+    if(!hasKey){
+      ask.readOnly=true; ask.value='';
+      ask.placeholder='请前往设置页配置 API key';
+      send.disabled=true;
+    } else {
+      ask.readOnly=false;
+      ask.placeholder='有什么我能帮助你的吗？';
+      send.disabled=false;
+    }
+    autosize(); positionFloating();
+  }
+  ask.addEventListener('click', function(){
+    if(!hasKey) log('AI 未启用','请前往设置页配置 key');
+  });
+  document.getElementById('send').addEventListener('click', function(){
+    if(!hasKey){ log('AI 未启用','请前往设置页配置 key'); return; }
+    if(!ask.value.trim()) return;
+    log('问 AI', ask.value.slice(0,12));
+    ask.value=''; autosize(); ask.focus();
+  });
+  ask.addEventListener('keydown', function(e){
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('send').click(); }
+  });
+
+  // 跳转到对应项目：展开宠物、滑出主界面、把那张卡片滚到视野中央并闪一下
+  function jumpTo(projectName, kind){
+    if(!expanded){ setExpanded(true); }
+    main.classList.add('on');
+    var card=main.querySelector('.card[data-name="'+projectName+'"]');
+    if(card){
+      main.scrollLeft = Math.max(0, card.offsetLeft - 60);
+      card.classList.add('flash');
+      setTimeout(function(){ card.classList.remove('flash'); }, 1600);
+    }
+    if(kind) hideBubble(kind);
+    log('evt_panel_open','跳转到 '+projectName);
+  }
+
+  function hideBubble(kind, reason){
+    var el=bubbles.querySelector('[data-kind="'+kind+'"]');
+    if(!el) return;
+    clearTimeout(el._timer);
+    el.remove();
+    if(reason) log('evt_bubble_ignore', reason);
+    positionFloating();
+  }
+  function hideAllBubbles(reason){
+    ['deadline','report'].forEach(function(k){ hideBubble(k, reason); });
+  }
+
+  function showBubble(kind){
+    hideBubble(kind);
+
+    var el=document.createElement('div');
+    el.className='bubble '+(kind==='deadline'?'deadline':'report');
+    el.dataset.kind=kind;
+    el.innerHTML = kind==='deadline'
+      ? '<div class="bt">今天 23:59 截止</div><div class="bname">求职 · 回面试邮件</div>'
+        +'<div class="bx"><span>不自动消失</span><span class="acts"><button class="primary view">查看</button></span></div>'
+      : '<div class="bt">开机播报</div>'
+        +'<div class="brow"><b>毕业论文</b><span>42%，3/7，昨天</span></div>'
+        +'<div class="brow"><b>配音练习</b><span>18%，1/7，前天</span></div>'
+        +'<div class="brow"><b>求职</b><span>65%，5/7，3 天之前</span></div>'
+        +'<div class="bx"><span>15 秒后自动收起</span><span class="acts">'
+        +'<button class="primary view">查看</button><button class="ok">知道了</button></span></div>';
+    bubbles.appendChild(el);
+
+    el.querySelector('.view').addEventListener('click', function(){
+      jumpTo(kind==='deadline'?'求职':'毕业论文', kind);
+    });
+    var ok=el.querySelector('.ok');
+    if(ok) ok.addEventListener('click', function(){ hideBubble(kind, '点了知道了'); });
+
+    log(kind==='deadline'?'evt_bubble_show (截止强提醒)':'evt_bubble_show (开机播报)');
+    positionFloating();
+
+    if(kind!=='deadline') el._timer=setTimeout(function(){ hideBubble(kind,'15 秒未处理'); }, 15000);
+  }
+
+  document.querySelector('.hud').addEventListener('click', function(e){
+    var act=e.target.dataset.act; if(!act) return;
+    if(act==='form'){ form=form==='A'?'B':'A'; formA.style.display=form==='A'?'':'none'; formB.style.display=form==='B'?'':'none'; openPanel(); }
+    if(act==='deadline') showBubble('deadline');
+    if(act==='report') showBubble('report');
+    if(act==='fullscreen'){ pet.style.display=pet.style.display==='none'?'':'none'; log('全屏降级','宠物隐藏'); }
+    if(act==='key'){
+      hasKey=!hasKey;
+      localStorage.setItem('aiKey', hasKey?'1':'0');
+      e.target.textContent = hasKey?'已配置 key':'未配置 key';
+      e.target.classList.toggle('on', hasKey);
+      renderAi();
+      log(hasKey?'已配置模型 key':'未配置模型 key', 'AI 入口'+(hasKey?'启用':'只读'));
+    }
+    if(act==='side'){
+      SIDE = SIDE==='right'?'left':'right';
+      localStorage.setItem('petSide', SIDE);
+      applySide();
+      log('换到'+(SIDE==='left'?'左侧':'右侧'));
+    }
+    if(act==='none'){
+      noCurrent=!noCurrent;
+      e.target.textContent = noCurrent?'有当前事务':'无当前事务';
+      e.target.classList.toggle('on', noCurrent);
+      applyEmpty();
+      openPanel();
+      log(noCurrent?'没有当前事务':'有当前事务','面板'+(noCurrent?'只显示提示':'照常'));
+    }
+    if(act==='reset'){
+      localStorage.removeItem('petTop'); localStorage.removeItem('petSide');
+      SIDE='right'; pet.style.top=Math.round(innerHeight*0.42)+'px';
+      applySide();
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape'){ closePanel(); hideAllBubbles(); if(expanded){ setExpanded(false); main.classList.remove('on'); } }
+  });
+  main.addEventListener('click', function(e){ if(e.target===main) { setExpanded(false); main.classList.remove('on'); } });
+
+  var hudToggle=document.getElementById('hudToggle');
+  if(hudToggle){
+    hudToggle.addEventListener('click', function(){
+      var collapsed=document.getElementById('hud').classList.toggle('collapsed');
+      hudToggle.textContent = collapsed?'演示控制':'收起演示';
+    });
+  }
+
+  addEventListener('resize', positionFloating);
+  pet.addEventListener('pointerup', positionFloating);
+
+  var keyBtn=document.querySelector('.hud button[data-act="key"]');
+  if(keyBtn){ keyBtn.textContent = hasKey?'已配置 key':'未配置 key'; keyBtn.classList.toggle('on', hasKey); }
+  applySide();
+  renderAi();
+})();
+</script>
+</body>
+</html>

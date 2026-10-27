@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方向 B · 纸质手账</title>
+<style>
+  :root{
+    --paper:#f5efe2; --paper2:#efe6d4; --ink:#2c2724; --ink2:#6f6455;
+    --rule:#d8cbb2; --stamp:#b0463a; --green:#5c6b46;
+    --f-serif:"Source Han Serif SC","Songti SC",SimSun,serif;
+    --f-sans:"Microsoft YaHei UI","PingFang SC",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f-sans);color:var(--ink);overflow:hidden;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 27px, rgba(200,182,152,.28) 27px 28px),
+      radial-gradient(circle at 20% 10%, #faf6ec, var(--paper) 60%, var(--paper2));}
+
+  .win{position:absolute;left:110px;top:96px;width:min(880px,62vw);background:#fffdf7;
+    border:1px solid var(--rule);box-shadow:6px 8px 0 rgba(120,100,70,.10);}
+  .win .bar{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--rule);font-size:12px;color:var(--ink2)}
+  .win .bar b{font-weight:600;color:var(--ink)}
+  .win .body{padding:30px 36px}
+  .win h1{font-family:var(--f-serif);font-weight:600;font-size:22px;margin:0 0 18px;letter-spacing:.5px}
+  .rule{height:1px;background:var(--rule);margin:16px 0}
+  .rule.s{width:60%}
+
+  .hud{position:fixed;left:24px;top:20px;z-index:40;display:flex;flex-wrap:wrap;gap:8px;max-width:520px}
+  .hud button{min-height:34px;padding:6px 12px;font-size:13px;font-family:var(--f-sans);color:var(--ink);
+    background:#fffdf7;border:1px solid var(--rule);cursor:pointer}
+  .hud button:hover{background:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:8px 4px;font-family:var(--f-serif)}
+
+  .pet{position:fixed;right:0;z-index:30;cursor:pointer;user-select:none;transform-origin:bottom right}
+  .pet img{display:block;width:auto}
+  .pet .collapsed{height:240px;animation:breathe 4.2s ease-in-out infinite}
+  .pet .expanded{height:360px;display:none}
+  .pet.is-expanded .collapsed{display:none}
+  .pet.is-expanded .expanded{display:block}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
+  .panel{position:fixed;z-index:31;width:330px;padding:18px 20px;background:#fffdf7;
+    border:1px solid var(--rule);box-shadow:6px 8px 0 rgba(120,100,70,.12);
+    opacity:0;transform:translateX(6px);pointer-events:none;transition:opacity .16s,transform .16s}
+  .panel.on{opacity:1;transform:none;pointer-events:auto}
+  .panel .pname{font-family:var(--f-serif);font-size:17px;font-weight:600}
+  .panel .track{display:flex;gap:6px;margin:12px 0 10px}
+  .panel .track i{flex:1;height:6px;border:1px solid var(--rule);background:#fff}
+  .panel .track i.done{background:var(--green);border-color:var(--green)}
+  .panel .step{font-size:14px;line-height:1.7;margin:0 0 6px}
+  .panel .meta{font-size:12px;color:var(--ink2);margin-bottom:14px;letter-spacing:.3px}
+  .panel .ai{display:flex;gap:8px;margin-bottom:12px}
+  .panel .ai input{flex:1;min-height:36px;padding:8px 10px;font-size:13px;font-family:var(--f-sans);
+    border:1px solid var(--rule);background:#fff}
+  .panel .ai button{min-height:36px;padding:0 12px;font-size:13px;border:1px solid var(--rule);background:#fff;cursor:pointer}
+  .panel .go{width:100%;min-height:44px;border:1px solid var(--stamp);background:var(--stamp);color:#fff;
+    font-size:15px;font-family:var(--f-serif);letter-spacing:2px;cursor:pointer}
+  .panel .go:hover{background:#9d3c32}
+  .panel .skip{margin-top:10px;text-align:center;font-size:12px;color:var(--ink2);cursor:pointer;text-decoration:underline dotted}
+
+  .main{position:fixed;right:0;top:0;height:100%;width:720px;z-index:29;padding:30px 34px;
+    background:#fbf7ec;border-left:1px solid var(--rule);box-shadow:-8px 0 0 rgba(120,100,70,.06);
+    transform:translateX(100%);transition:transform .26s ease;overflow:auto}
+  .main.on{transform:none}
+  .main header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;
+    border-bottom:2px solid var(--ink);padding-bottom:10px}
+  .main h2{font-family:var(--f-serif);font-size:19px;margin:0;letter-spacing:1px}
+  .newp{min-height:32px;padding:0 10px;font-size:12px;border:1px solid var(--rule);background:#fff;cursor:pointer}
+  .cards{display:flex;gap:16px;overflow-x:auto;padding:6px 4px 10px}
+  .card{flex:0 0 200px;padding:16px 18px;background:#fffdf7;border:1px solid var(--rule);
+    box-shadow:3px 4px 0 rgba(120,100,70,.10)}
+  .card:nth-child(2){transform:rotate(-.5deg)}
+  .card:nth-child(3){transform:rotate(.6deg)}
+  .card .cn{font-family:var(--f-serif);font-size:15px;font-weight:600;margin-bottom:8px}
+  .card .pct{font-family:var(--f-serif);font-size:30px;color:var(--stamp);letter-spacing:-1px}
+  .card .pct small{font-size:12px;color:var(--ink2);margin-left:2px}
+  .card .nx{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:10px;min-height:40px}
+  .mods{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+  .mods a{display:flex;align-items:center;min-height:44px;padding:0 16px;font-size:13px;color:var(--ink);
+    text-decoration:none;border-bottom:1px solid var(--ink2)}
+  .mods a:hover{color:var(--stamp);border-color:var(--stamp)}
+
+  .bubble{position:fixed;z-index:32;max-width:300px;padding:14px 16px;background:#fffdf7;
+    border:1px solid var(--rule);box-shadow:4px 6px 0 rgba(120,100,70,.12);font-size:13px;line-height:1.7;
+    opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .18s,transform .18s}
+  .bubble.on{opacity:1;transform:none;pointer-events:auto}
+  .bubble .bt{font-family:var(--f-serif);font-size:13px;font-weight:600;margin-bottom:8px;color:var(--stamp)}
+  .bubble.report .bt{color:var(--green)}
+  .bubble .bx{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:var(--ink2)}
+  .bubble .bx button{min-height:30px;padding:0 10px;font-size:12px;border:1px solid var(--rule);background:#fff;cursor:pointer}
+
+  .console{position:fixed;left:24px;bottom:20px;width:360px;max-height:180px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.8;color:var(--ink2);background:#fffdf7;
+    border:1px solid var(--rule)}
+  .console b{color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="bar"><b>thesis.docx</b><span>第三章 · 自动保存</span></div>
+  <div class="body">
+    <h1>第三章 结论</h1>
+    <div class="rule"></div><div class="rule"></div><div class="rule s"></div>
+    <div class="rule"></div><div class="rule s"></div>
+  </div>
+</div>
+
+<div class="hud">
+  <span class="tag">原型控制</span>
+  <button data-act="form">切换面板形态 A / B</button>
+  <button data-act="deadline">截止强提醒</button>
+  <button data-act="report">开机播报</button>
+  <button data-act="fullscreen">全屏降级</button>
+  <button data-act="reset">重置位置</button>
+</div>
+
+<aside class="panel" id="panel">
+  <div id="formA">
+    <div class="pname">毕业论文</div>
+    <div class="track"><i class="done"></i><i class="done"></i><i class="done"></i><i></i><i></i><i></i><i></i></div>
+    <p class="step">把第三章结论写成三句话</p>
+    <div class="meta">第 3 步 / 共 7 步 · 约 5 分钟</div>
+  </div>
+  <div id="formB" style="display:none">
+    <div class="pname">回面试邮件</div>
+    <div class="meta">独立事务 · 不属于任何项目</div>
+  </div>
+  <div class="ai">
+    <input id="ask" placeholder="问一句，比如：这段该写什么">
+    <button id="send">问</button>
+  </div>
+  <button class="go" id="start">开 始</button>
+  <div class="skip" id="skip">不做</div>
+</aside>
+
+<section class="main" id="main">
+  <header>
+    <h2>我的项目</h2>
+    <button class="newp">新建项目</button>
+  </header>
+  <div class="cards">
+    <div class="card"><div class="cn">毕业论文</div><div class="pct">42<small>%</small></div><div class="nx">下一步：把第三章结论写成三句话</div></div>
+    <div class="card"><div class="cn">配音练习</div><div class="pct">18<small>%</small></div><div class="nx">下一步：录一段 60 秒的开场白</div></div>
+    <div class="card"><div class="cn">求职</div><div class="pct">65<small>%</small></div><div class="nx">下一步：回面试邮件，约时间</div></div>
+  </div>
+  <div class="mods"><a href="#">记录与进度</a><a href="#">想法收件箱</a><a href="#">设置</a></div>
+</section>
+
+<div class="bubble" id="bubble"></div>
+
+<div class="pet" id="pet">
+  <img class="collapsed" src="../assets/桌宠/常驻右-240.png" alt="桌宠收起态">
+  <img class="expanded" src="../assets/桌宠/展开-360.png" alt="桌宠展开态">
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：等待操作</div></div>
+
+<script>
+(function(){
+  var pet=document.getElementById('pet'), panel=document.getElementById('panel'),
+      main=document.getElementById('main'), bubble=document.getElementById('bubble'),
+      logBox=document.getElementById('log'), formA=document.getElementById('formA'),
+      formB=document.getElementById('formB'), ask=document.getElementById('ask');
+  var hoverIn=null, hoverOut=null, expanded=false, form='A', bubbleTimer=null;
+
+  pet.style.top=(localStorage.getItem('petTop')||Math.round(innerHeight*0.42))+'px';
+
+  function log(n,x){var d=document.createElement('div');d.innerHTML='<b>'+n+'</b>'+(x?' · '+x:'');logBox.appendChild(d);logBox.scrollTop=logBox.scrollHeight;}
+  function setExpanded(v){expanded=v;pet.classList.toggle('is-expanded',v);log(v?'evt_appear (展开)':'evt_appear (收起)');}
+  function openPanel(){var r=pet.getBoundingClientRect();
+    panel.style.top=Math.max(16,Math.min(innerHeight-280,r.top+36))+'px';
+    panel.style.right=(r.width-18)+'px';panel.classList.add('on');log('evt_step_shown');}
+  function closePanel(){panel.classList.remove('on');}
+
+  pet.addEventListener('pointerenter',function(){clearTimeout(hoverOut);hoverIn=setTimeout(openPanel,300);});
+  pet.addEventListener('pointerleave',function(){clearTimeout(hoverIn);hoverOut=setTimeout(closePanel,500);});
+  panel.addEventListener('pointerenter',function(){clearTimeout(hoverOut);});
+  panel.addEventListener('pointerleave',function(){hoverOut=setTimeout(closePanel,500);});
+
+  var dragging=false,startY=0,startTop=0,dragMoved=false;
+  pet.addEventListener('pointerdown',function(e){dragging=true;dragMoved=false;startY=e.clientY;
+    startTop=parseFloat(pet.style.top)||0;pet.setPointerCapture(e.pointerId);});
+  pet.addEventListener('pointermove',function(e){if(!dragging)return;var dy=e.clientY-startY;
+    if(Math.abs(dy)>4)dragMoved=true;var top=Math.max(0,Math.min(innerHeight-360,startTop+dy));
+    pet.style.top=top+'px';localStorage.setItem('petTop',Math.round(top));});
+  pet.addEventListener('pointerup',function(){dragging=false;setTimeout(function(){dragMoved=false;},50);});
+
+  pet.addEventListener('click',function(){if(dragMoved)return;
+    if(!expanded){setExpanded(true);main.classList.add('on');log('evt_panel_open','主界面滑出');}
+    else{setExpanded(false);main.classList.remove('on');}});
+
+  document.getElementById('start').addEventListener('click',function(){log('evt_start','项目=毕业论文');closePanel();});
+  document.getElementById('skip').addEventListener('click',function(){log('evt_skip','悬停面板');closePanel();});
+  document.getElementById('send').addEventListener('click',function(){if(!ask.value.trim())return;
+    log('问 AI',ask.value.slice(0,12));ask.value='';ask.placeholder='答：先写一句话，用来占位';});
+
+  function showBubble(kind){var r=pet.getBoundingClientRect();
+    bubble.className='bubble on '+(kind==='deadline'?'deadline':'report');
+    bubble.innerHTML = kind==='deadline'
+      ? '<div class="bt">今天 23:59 截止</div>笔试确认邮件需要回复，不回就没有这次机会。<div class="bx"><span>不自动消失</span><button id="ok">知道了</button></div>'
+      : '<div class="bt">开机播报</div>毕业论文 42%，已 3 天未推进；配音练习 18%，昨天推进过。<div class="bx"><span>15 秒后自动收起</span><button id="ok2">查看</button></div>';
+    bubble.style.top=Math.max(12,r.top-8)+'px';bubble.style.right=(r.width+16)+'px';
+    log(kind==='deadline'?'evt_bubble_show (截止强提醒)':'evt_bubble_show (开机播报)');
+    clearTimeout(bubbleTimer);
+    var btn=bubble.querySelector('#ok')||bubble.querySelector('#ok2');
+    btn.addEventListener('click',function(){bubble.classList.remove('on');});
+    if(kind!=='deadline')bubbleTimer=setTimeout(function(){bubble.classList.remove('on');log('evt_bubble_ignore','开机播报');},15000);}
+
+  document.querySelector('.hud').addEventListener('click',function(e){var act=e.target.dataset.act;if(!act)return;
+    if(act==='form'){form=form==='A'?'B':'A';formA.style.display=form==='A'?'':'none';
+      formB.style.display=form==='B'?'':'none';openPanel();}
+    if(act==='deadline')showBubble('deadline');
+    if(act==='report')showBubble('report');
+    if(act==='fullscreen'){pet.style.display=pet.style.display==='none'?'':'none';log('全屏降级','宠物隐藏');}
+    if(act==='reset'){localStorage.removeItem('petTop');pet.style.top=Math.round(innerHeight*0.42)+'px';}});
+
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closePanel();
+    if(expanded){setExpanded(false);main.classList.remove('on');}bubble.classList.remove('on');}});
+  main.addEventListener('click',function(e){if(e.target===main){setExpanded(false);main.classList.remove('on');}});
+})();
+</script>
+</body>
+</html>

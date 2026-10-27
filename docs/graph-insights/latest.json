@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-10-23",
+  "tool": "code_insight (agent 整理)",
+  "project": "ai_pet_assistant",
+  "root": "app/lib",
+  "layers": [
+    { "name": "app", "files": ["main.dart", "app/app.dart", "app/router.dart", "app/theme.dart", "app/providers.dart", "app/main_shell.dart"] },
+    { "name": "features", "dirs": ["pet", "panel", "tasks", "records", "projects", "ideas", "settings"] },
+    { "name": "domain", "dirs": ["model", "usecase", "port"] },
+    { "name": "data", "dirs": ["db", "dao", "repository", "mapping"] },
+    { "name": "platform", "dirs": ["window", "tray", "autostart", "secure_storage", "notify"] },
+    { "name": "ai", "dirs": ["client", "prompt", "parse", "fallback"] }
+  ],
+  "nodes": [
+    { "id": "providers", "kind": "container", "path": "app/lib/app/providers.dart", "provides": "7 repositories + 6 usecases + platform ports + notifiers" },
+    { "id": "pet_notifier", "kind": "notifier", "path": "app/lib/features/pet/pet_notifier.dart" },
+    { "id": "panel_notifier", "kind": "notifier", "path": "app/lib/features/panel/panel_notifier.dart", "status": "planned-b09" },
+    { "id": "finish_task", "kind": "usecase", "path": "app/lib/domain/usecase/finish_task.dart" },
+    { "id": "project_repository", "kind": "repository", "path": "app/lib/data/repository/project_repository.dart" },
+    { "id": "task_repository", "kind": "repository", "path": "app/lib/data/repository/task_repository.dart" },
+    { "id": "note_repository", "kind": "repository", "path": "app/lib/data/repository/note_repository.dart" },
+    { "id": "app_db", "kind": "database", "path": "app/lib/data/db/app_db.dart", "tables": 12, "schemaVersion": 1 }
+  ],
+  "edges": [
+    { "from": "pet_notifier", "to": "pet_stage_port", "type": "calls" },
+    { "from": "pet_stage_port", "to": "pet_layout", "type": "calls" },
+    { "from": "panel_notifier", "to": "task_repository", "type": "reads" },
+    { "from": "panel_notifier", "to": "project_repository", "type": "reads" },
+    { "from": "panel_notifier", "to": "note_repository", "type": "reads-writes" },
+    { "from": "panel_notifier", "to": "finish_task", "type": "calls" },
+    { "from": "finish_task", "to": "project_repository", "type": "writes" }
+  ],
+  "gaps": [
+    "面板当前事务无持久指针，B09 用「最近推进项目的第一条未完成待办」",
+    "AI 端口仍为离线实现，等 B22"
+  ]
+}

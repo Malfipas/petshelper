@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>第 3 页 · 主界面</title>
+<style>
+  :root{
+    --bg1:#eef2f7; --bg2:#dfe6ef;
+    --ink:#1f2937; --ink2:#6b7686; --ink3:#9aa5b4;
+    --line:#dfe6f0; --line2:#c8d3e2;
+    --accent:#2563eb; --accent-soft:#eef3fe;
+    --f:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f);color:var(--ink);overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+
+  .win{position:absolute;left:90px;top:110px;width:min(780px,44vw);background:#fff;
+       border:1px solid var(--line2);border-radius:12px;box-shadow:0 14px 36px rgba(30,50,80,.14);overflow:hidden}
+  .win .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f6f8fb;border-bottom:1px solid var(--line)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .win .t{font-size:13px;color:var(--ink2);margin-left:6px}
+  .win .body{padding:26px 30px}
+  .win h1{font-size:18px;margin:0 0 16px;font-weight:600}
+  .rule{height:12px;border-radius:6px;background:#eff2f7;margin:11px 0}
+  .rule.s{width:60%}
+
+  .hud{position:fixed;left:22px;top:16px;z-index:40;display:flex;flex-wrap:wrap;gap:8px;max-width:620px}
+  .hud button,.hud a{min-height:34px;display:inline-flex;align-items:center;padding:6px 11px;font-size:13px;
+    font-family:var(--f);color:var(--ink);text-decoration:none;background:rgba(255,255,255,.82);
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .hud button:hover,.hud a:hover{background:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:8px 4px}
+
+  /* 宠物按桌面比例走：收起占 20%×20%，展开占 30%×30%，图片右缘贴住屏幕右缘 */
+  .pet{position:fixed;right:0;bottom:8%;z-index:30;cursor:pointer;user-select:none;
+    width:20vw;height:20vh;display:flex;align-items:flex-end;justify-content:flex-end}
+  .pet img{max-width:100%;max-height:100%;width:auto;height:auto;display:block}
+  .pet .collapsed{animation:breathe 4.2s ease-in-out infinite;transform-origin:bottom center}
+  .pet .expanded{display:none}
+  .pet.is-expanded{width:30vw;height:30vh}
+  .pet.is-expanded .collapsed{display:none}
+  .pet.is-expanded .expanded{display:block}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
+  /* ---------- 主界面：从右滑出，落在屏幕中央，占桌面 70% ---------- */
+  /* 外层壳：把标签页整个包进去，圆角比示例收小 */
+  .app{position:fixed;left:50%;top:50%;width:70vw;height:70vh;min-width:880px;min-height:560px;
+    z-index:28;display:flex;flex-direction:column;padding:16px 18px 18px;
+    background:#f2f6fc;border:1px solid var(--line2);border-radius:18px;
+    box-shadow:0 28px 70px rgba(30,50,80,.22);
+    transform:translate(calc(-50% + 110vw), -50%);opacity:0;pointer-events:none;
+    transition:transform .34s cubic-bezier(.2,.7,.2,1),opacity .2s ease}
+  .app.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+
+  /* 标签是一排独立的圆角块，与页面之间留 8 像素，所有边角都是同一种圆角 */
+  .tabs{display:flex;gap:8px;align-items:center;padding-left:4px;margin-bottom:8px;position:relative;z-index:3}
+  .tab{min-height:38px;padding:0 20px;font-size:14px;font-family:var(--f);color:var(--ink2);
+    background:transparent;border:1px solid transparent;border-radius:12px;cursor:pointer;
+    transition:color .15s,background .15s,border-color .15s,box-shadow .15s}
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:#fff;border-color:var(--line2);color:var(--ink);font-weight:600;
+    box-shadow:0 2px 8px rgba(30,50,80,.08)}
+
+  .sheet{position:relative;flex:1;min-height:0;background:#fff;border:1px solid var(--line2);
+    border-radius:14px;padding:26px 30px;overflow:auto}
+
+  .page{display:none}
+  .page.on{display:block}
+
+  .ph{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px}
+  .ph h3{font-size:16px;margin:0;font-weight:600}
+  .ph .sub{font-size:12px;color:var(--ink3);margin-top:5px}
+  .ph button{min-height:34px;padding:0 12px;font-size:13px;color:var(--accent);background:#fff;
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .ph button:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+  /* 我的项目 */
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .card{display:flex;flex-direction:column;gap:12px;padding:18px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;cursor:pointer;transition:border-color .16s,box-shadow .16s,transform .16s}
+  .card:hover{border-color:#b9c8dd;box-shadow:0 8px 20px rgba(30,50,80,.08);transform:translateY(-1px)}
+  .card.flash{border-color:var(--accent);box-shadow:0 8px 22px rgba(37,99,235,.14)}
+  .card .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .card .cn{font-size:14px;font-weight:600}
+  .card .pct{font-size:13px;color:var(--ink2)}
+  .bar{height:4px;border-radius:2px;background:#eef1f6;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+  .card .nx{font-size:13px;line-height:1.6;color:var(--ink2)}
+  .card .nx b{font-weight:600;color:var(--ink)}
+  .card .when{font-size:12px;color:var(--ink3)}
+
+  /* 独立事项 */
+  .list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:14px;padding:15px 18px;background:#fff;border-bottom:1px solid var(--line);
+    cursor:pointer;transition:background .14s}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:#fafbfe}
+  .row .name{font-size:14px;flex:1}
+  .row .tagline{font-size:12px;color:var(--ink3)}
+  .row .go{min-height:30px;padding:0 10px;font-size:12px;color:var(--accent);background:#fff;
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+
+  .empty{padding:54px 0;text-align:center;color:var(--ink3);font-size:13px}
+  .empty b{display:block;font-size:15px;color:var(--ink2);margin-bottom:8px;font-weight:600}
+
+  .todo{padding:40px 0;text-align:center;color:var(--ink3);font-size:13px}
+
+  .console{position:fixed;left:22px;bottom:16px;width:380px;max-height:150px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.7;color:#3c4657;background:rgba(255,255,255,.88);
+    border:1px solid var(--line2);border-radius:10px}
+  .console b{font-weight:600;color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="bar">
+    <span class="dot" style="background:#ff5f57"></span>
+    <span class="dot" style="background:#febc2e"></span>
+    <span class="dot" style="background:#28c840"></span>
+    <span class="t">thesis.docx — 第三章</span>
+  </div>
+  <div class="body">
+    <h1>第三章 结论</h1>
+    <div class="rule"></div><div class="rule s"></div><div class="rule"></div><div class="rule s"></div>
+  </div>
+</div>
+
+<div class="hud">
+  <span class="tag">原型控制</span>
+  <button data-act="toggle">开 / 关主界面</button>
+  <button data-act="reset">回到默认标签</button>
+  <button onclick="location.href='整体原型.html'">整体原型</button>
+</div>
+
+<div class="app on" id="app">
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-tab="solo">独立事项</button>
+    <button class="tab" data-tab="projects">我的项目</button>
+    <button class="tab" data-tab="records">我的记录</button>
+    <button class="tab" data-tab="ideas">想法盒</button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <section class="sheet">
+    <div class="page on" id="page-solo">
+      <div class="ph">
+        <div>
+          <h3>独立事项</h3>
+          <div class="sub">不属于任何项目的事，做完就完</div>
+        </div>
+        <button class="new-item">新建一件事</button>
+      </div>
+      <div class="list">
+        <div class="row"><span class="name">回面试邮件</span><span class="tagline">今天建的</span><button class="go">开始</button></div>
+        <div class="row"><span class="name">交电费</span><span class="tagline">3 天前</span><button class="go">开始</button></div>
+        <div class="row"><span class="name">把发票拍了报销</span><span class="tagline">一周前</span><button class="go">开始</button></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-projects">
+      <div class="ph">
+        <div>
+          <h3>我的项目</h3>
+          <div class="sub" id="sub">3 个项目，最近推进：毕业论文</div>
+        </div>
+        <button id="newp">新建项目</button>
+      </div>
+      <div class="grid" id="grid">
+        <div class="card" data-name="毕业论文">
+          <div class="top"><span class="cn">毕业论文</span><span class="pct">42%</span></div>
+          <div class="bar"><i style="width:42%"></i></div>
+          <div class="nx">下一步：把第三章结论写成<b>三句话</b></div>
+          <div class="when">最近推进：昨天</div>
+        </div>
+        <div class="card" data-name="求职">
+          <div class="top"><span class="cn">求职</span><span class="pct">65%</span></div>
+          <div class="bar"><i style="width:65%"></i></div>
+          <div class="nx">下一步：回面试邮件，<b>约时间</b></div>
+          <div class="when">最近推进：3 天前</div>
+        </div>
+        <div class="card" data-name="配音练习">
+          <div class="top"><span class="cn">配音练习</span><span class="pct">18%</span></div>
+          <div class="bar"><i style="width:18%"></i></div>
+          <div class="nx">下一步：录一段 <b>60 秒</b>的开场白</div>
+          <div class="when">最近推进：前天</div>
+        </div>
+      </div>
+      <div class="empty" id="empty"><b>还没有项目</b>先建一个，助手才知道该往哪儿推</div>
+    </div>
+
+    <div class="page" id="page-records">
+      <div class="ph"><div><h3>我的记录</h3><div class="sub">做完的事都在这儿，按天排</div></div></div>
+      <div class="todo">这一页还没设计，等讨论定了再画。</div>
+    </div>
+
+    <div class="page" id="page-ideas">
+      <div class="ph"><div><h3>想法盒</h3><div class="sub">别处收进来的句子，归到项目或独立事项</div></div></div>
+      <div class="todo">这一页还没设计，等讨论定了再画。</div>
+    </div>
+
+    <div class="page" id="page-settings">
+      <div class="ph"><div><h3>设置</h3><div class="sub">快捷键、气泡、模型 key、数据导出</div></div></div>
+      <div class="todo">这一页还没设计，等讨论定了再画。</div>
+    </div>
+  </section>
+</div>
+
+<div class="pet is-expanded" id="pet">
+  <img class="collapsed" src="../assets/桌宠/常驻右-240.png" alt="桌宠收起态">
+  <img class="expanded" src="../assets/桌宠/展开-360.png" alt="桌宠展开态">
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：主界面已打开，默认停在「独立事项」</div></div>
+
+<script>
+(function(){
+  var app=document.getElementById('app'), tabs=document.getElementById('tabs'),
+      logBox=document.getElementById('log'), sub=document.getElementById('sub'),
+      grid=document.getElementById('grid'), empty=document.getElementById('empty'),
+      pet=document.getElementById('pet');
+
+  function log(n,x){var d=document.createElement('div');d.innerHTML='<b>'+n+'</b>'+(x?' · '+x:'');
+    logBox.appendChild(d);logBox.scrollTop=logBox.scrollHeight;}
+
+  function open(){
+    app.classList.add('on'); pet.classList.add('is-expanded');
+    log('evt_panel_open','主界面滑出并居中');
+  }
+  function close(){
+    app.classList.remove('on'); pet.classList.remove('is-expanded');
+    log('主界面收起','点桌宠');
+  }
+
+  /* 标签：选中的那个并入下方页面 */
+  function selectTab(name){
+    [].forEach.call(tabs.children, function(btn){
+      var on=btn.dataset.tab===name;
+      btn.classList.toggle('on', on);
+      var page=document.getElementById('page-'+btn.dataset.tab);
+      if(page) page.classList.toggle('on', on);
+    });
+    log('切到标签', name);
+  }
+
+  tabs.addEventListener('click', function(e){
+    var btn=e.target.closest('.tab'); if(!btn) return;
+    selectTab(btn.dataset.tab);
+  });
+
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
+  // 关闭只有一个入口：点展开态的桌宠
+  pet.addEventListener('click', function(){ app.classList.contains('on')?close():open(); });
+
+  /* 我的项目 */
+  function refreshMain(){
+    var cards=grid.querySelectorAll('.card').length;
+    sub.textContent = cards ? (cards+' 个项目，最近推进：'+grid.querySelector('.card .cn').textContent) : '还没有项目';
+    empty.style.display = cards?'none':'block';
+    grid.style.display = cards?'grid':'none';
+  }
+  grid.addEventListener('click', function(e){
+    var card=e.target.closest('.card'); if(!card) return;
+    card.classList.add('flash');
+    setTimeout(function(){ card.classList.remove('flash'); },1200);
+    log('点开项目', card.dataset.name);
+  });
+  document.getElementById('newp').addEventListener('click', function(){
+    var name=prompt('新项目叫什么？'); if(!name) return;
+    var card=document.createElement('div');
+    card.className='card'; card.dataset.name=name;
+    card.innerHTML='<div class="top"><span class="cn">'+name.replace(/[<>&]/g,'')+
+      '</span><span class="pct">0%</span></div><div class="bar"><i style="width:0%"></i></div>'+
+      '<div class="nx">下一步：还没有，点进来拆一件</div><div class="when">最近推进：今天</div>';
+    grid.appendChild(card); refreshMain(); log('新建项目', name);
+  });
+  refreshMain();
+
+  document.querySelector('.hud').addEventListener('click', function(e){
+    var act=e.target.dataset.act; if(!act) return;
+    if(act==='toggle'){ app.classList.contains('on')?close():open(); }
+    if(act==='reset'){ selectTab('solo'); open(); }
+
+  });
+
+  selectTab('solo');
+})();
+</script>
+</body>
+</html>

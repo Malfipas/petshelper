@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>第 8 页 · 设置</title>
+<style>
+  :root{
+    --bg1:#eef2f7; --bg2:#dfe6ef;
+    --ink:#1f2937; --ink2:#6b7686; --ink3:#9aa5b4;
+    --line:#e3e9f2; --line2:#c8d3e2;
+    --accent:#2563eb; --accent-soft:#eef3fe;
+    --f:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f);color:var(--ink);overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+
+  .hud{position:fixed;left:22px;top:16px;z-index:40;display:flex;flex-direction:column;
+    align-items:flex-start;gap:8px;max-width:560px}
+  .hud button,.hud a{min-height:34px;display:inline-flex;align-items:center;padding:6px 11px;font-size:13px;
+    font-family:var(--f);color:var(--ink);text-decoration:none;background:rgba(255,255,255,.92);
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .hud button:hover,.hud a:hover{background:#fff}
+  .hud button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:8px 4px}
+  .hud-panel{display:flex;flex-wrap:wrap;gap:8px;padding:8px;max-width:520px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line2);border-radius:10px}
+  .hud.collapsed .hud-panel{display:none}
+
+  .app{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:70vw;height:70vh;min-width:880px;min-height:560px;z-index:28;
+    display:flex;flex-direction:column;padding:16px 18px 18px;
+    background:#f2f6fc;border:1px solid var(--line2);border-radius:18px;
+    box-shadow:0 28px 70px rgba(30,50,80,.22)}
+
+  .tabs{display:flex;gap:8px;align-items:center;padding-left:4px;margin-bottom:8px}
+  .tab{min-height:38px;padding:0 20px;font-size:14px;font-family:var(--f);color:var(--ink2);
+    background:transparent;border:1px solid transparent;border-radius:12px;cursor:pointer}
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:#fff;border-color:var(--line2);color:var(--ink);font-weight:600;
+    box-shadow:0 2px 8px rgba(30,50,80,.08)}
+
+  .sheet{flex:1;min-height:0;background:#fff;border:1px solid var(--line2);border-radius:14px;
+    padding:24px 30px;overflow:auto}
+
+  .ph{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px}
+  .ph h3{margin:0;font-size:18px;font-weight:600}
+  .ph .sub{font-size:12px;color:var(--ink3)}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:20px}
+  .card h4{margin:0 0 4px;font-size:15px;font-weight:600}
+  .label{font-size:13px;color:var(--ink2);margin-bottom:6px}
+
+  .keyrow{display:flex;align-items:center;gap:8px}
+  .keyrow input{flex:1;min-width:0;max-width:420px;height:38px;padding:0 12px;font-size:14px;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line2);
+    border-radius:10px;outline:none}
+  .keyrow input:focus{border-color:var(--accent)}
+  .eye{flex:0 0 auto;width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+    color:var(--ink3);background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .eye:hover{color:var(--accent);border-color:var(--accent)}
+  .btn{height:38px;padding:0 16px;font-size:13px;font-family:var(--f);border-radius:10px;cursor:pointer}
+  .btn.primary{color:#fff;background:var(--accent);border:0}
+  .btn.primary:hover{background:#1d4ed8}
+  .btn.ghost{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+  .btn.ghost:hover{color:var(--accent);border-color:var(--accent)}
+
+  .linkrow{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .linkrow .label{flex:0 0 72px;margin-bottom:0}
+  .linkrow input{flex:1;min-width:0;max-width:420px;height:38px;padding:0 12px;font-size:13px;
+    font-family:var(--f);color:var(--ink2);background:#f6f8fb;border:1px solid var(--line);
+    border-radius:10px;outline:none}
+  .console{position:fixed;left:22px;bottom:16px;width:380px;max-height:130px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.7;color:#3c4657;background:rgba(255,255,255,.88);
+    border:1px solid var(--line2);border-radius:10px}
+  .console b{font-weight:600;color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<div class="hud collapsed" id="hud">
+  <button class="hud-toggle" id="hudToggle">演示控制</button>
+  <div class="hud-panel">
+    <span class="tag">第 8 页</span>
+    <button data-act="key">切换 key 状态</button>
+    <button data-act="reset">重置演示数据</button>
+    <a href="第一页-桌面常驻态.html">第 1 页</a>
+    <a href="第二页-悬停小面板.html">第 2 页</a>
+    <a href="第三页-主界面.html">第 3 页</a>
+    <a href="第四页-独立事项.html">第 4 页</a>
+    <a href="第五页-我的记录.html">第 5 页</a>
+    <a href="第六页-我的项目.html">第 6 页</a>
+    <a href="第七页-想法盒.html">第 7 页</a>
+  </div>
+</div>
+
+<div class="app">
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-tab="solo">独立事项</button>
+    <button class="tab" data-tab="projects">我的项目</button>
+    <button class="tab" data-tab="records">我的记录</button>
+    <button class="tab" data-tab="ideas">想法盒</button>
+    <button class="tab on" data-tab="settings">设置</button>
+  </nav>
+
+  <section class="sheet">
+    <div class="ph">
+      <h3>设置</h3>
+    </div>
+
+    <div class="card">
+      <h4>模型 API key</h4>
+      <div class="label">API key</div>
+      <div class="keyrow">
+        <input type="password" id="keyIn" placeholder="sk-…" autocomplete="off" spellcheck="false">
+        <button class="eye" id="eyeBtn" aria-label="显示明文">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+        <button class="btn primary" id="saveBtn">保存</button>
+        <button class="btn ghost" id="clearBtn">清除</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>项目地址</h4>
+      <div class="label">演示视频</div>
+      <div class="linkrow">
+        <input type="text" id="demoUrl" readonly value="https://example.com/ai-pet-demo.mp4">
+        <button class="btn ghost" data-copy="demoUrl">复制</button>
+      </div>
+      <div class="label">项目仓库</div>
+      <div class="linkrow">
+        <input type="text" id="repoUrl" readonly value="https://example.com/ai-pet">
+        <button class="btn ghost" data-copy="repoUrl">复制</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：设置页已打开</div></div>
+
+<script>
+(function(){
+  var logBox=document.getElementById('log');
+  function log(n,x){
+    var d=document.createElement('div');
+    d.innerHTML='<b>'+n+'</b>'+(x?' · '+x:'');
+    logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight;
+  }
+
+  var keyIn=document.getElementById('keyIn'),
+      eyeBtn=document.getElementById('eyeBtn');
+
+  function readKey(){
+    try{ return localStorage.getItem('apiKey')||''; }catch(e){ return ''; }
+  }
+  function writeKey(v){
+    try{ if(v) localStorage.setItem('apiKey', v); else localStorage.removeItem('apiKey'); }catch(e){}
+  }
+  function setAi(on){
+    try{ localStorage.setItem('aiKey', on?'1':'0'); }catch(e){}
+  }
+
+  // 保存/清除的反馈走按钮文字，不另放状态行
+  function flash(btn, text){
+    btn.textContent=text;
+    setTimeout(function(){ btn.textContent = btn===clearBtn ? '清除' : '保存'; }, 1500);
+  }
+  var saveBtn=document.getElementById('saveBtn'), clearBtn=document.getElementById('clearBtn');
+
+  saveBtn.addEventListener('click', function(){
+    var v=keyIn.value.trim();
+    if(!v){
+      writeKey(''); setAi(false);           // 空值按清除处理
+      flash(saveBtn,'已清除');
+      log('没有填入 key','当作清除处理');
+      return;
+    }
+    writeKey(v); setAi(true);
+    flash(saveBtn,'已保存');
+    log('已保存 key','AI 功能可以用了');
+  });
+
+  clearBtn.addEventListener('click', function(){
+    writeKey(''); setAi(false); keyIn.value='';
+    flash(clearBtn,'已清除');
+    log('已清除 key','AI 相关功能回到不启动');
+  });
+
+  eyeBtn.addEventListener('click', function(){
+    var show = keyIn.type==='password';
+    keyIn.type = show ? 'text' : 'password';
+    this.setAttribute('aria-label', show?'隐藏明文':'显示明文');
+    this.style.color = show ? 'var(--accent)' : '';
+  });
+
+  /* 复制：优先剪贴板，不行再退回 execCommand */
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var input=document.getElementById(btn.dataset.copy);
+      var text=input.value;
+      var done=function(){
+        btn.textContent='已复制';
+        setTimeout(function(){ btn.textContent='复制'; }, 1500);
+        log('已复制', text);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){ fallback(); });
+      } else {
+        fallback();
+      }
+      function fallback(){
+        try{
+          input.removeAttribute('readonly');
+          input.select();
+          document.execCommand('copy');
+          input.setAttribute('readonly','readonly');
+          done();
+        }catch(e){
+          input.select();
+          log('复制失败','手动选中后按 Ctrl+C');
+        }
+      }
+    });
+  });
+
+  document.querySelector('.hud').addEventListener('click', function(e){
+    var act=e.target.dataset.act; if(!act) return;
+    if(act==='key'){
+      var on=readKey()?false:true;
+      if(on){ writeKey('demo-key-0000'); } else { writeKey(''); }
+      setAi(on); keyIn.value = on? 'demo-key-0000' : '';
+      log(on?'已配置 key（演示）':'已清除 key','设置页');
+    }
+    if(act==='reset'){ location.reload(); }
+  });
+
+  document.getElementById('hudToggle').addEventListener('click', function(){
+    var collapsed=document.getElementById('hud').classList.toggle('collapsed');
+    this.textContent = collapsed?'演示控制':'收起演示';
+  });
+
+  document.getElementById('tabs').addEventListener('click', function(e){
+    var b=e.target.closest('.tab'); if(!b) return;
+    var btns=this.querySelectorAll('.tab');
+    for(var i=0;i<btns.length;i++) btns[i].classList.toggle('on', btns[i]===b);
+    if(b.dataset.tab!=='settings'){
+      log('切到标签', b.textContent+'（这一页还没做）');
+      setTimeout(function(){
+        for(var j=0;j<btns.length;j++) btns[j].classList.toggle('on', btns[j].dataset.tab==='settings');
+      }, 600);
+    }
+  });
+
+  keyIn.value=readKey();
+})();
+</script>
+</body>
+</html>

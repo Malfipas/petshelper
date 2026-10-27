@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>第 4 页 · 独立事项</title>
+<style>
+  :root{
+    --bg1:#eef2f7; --bg2:#dfe6ef;
+    --ink:#1f2937; --ink2:#6b7686; --ink3:#9aa5b4;
+    --line:#dfe6f0; --line2:#c8d3e2;
+    --accent:#2563eb; --accent-soft:#eef3fe;
+    --warm:#f0b429; --warm-soft:#fef3c7;
+    --f:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f);color:var(--ink);overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+
+  .win{position:absolute;left:90px;top:110px;width:min(780px,44vw);background:#fff;
+       border:1px solid var(--line2);border-radius:12px;box-shadow:0 14px 36px rgba(30,50,80,.14);overflow:hidden}
+  .win .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f6f8fb;border-bottom:1px solid var(--line)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .win .t{font-size:13px;color:var(--ink2);margin-left:6px}
+  .win .body{padding:26px 30px}
+  .win h1{font-size:18px;margin:0 0 16px;font-weight:600}
+  .rule{height:12px;border-radius:6px;background:#eff2f7;margin:11px 0}
+  .rule.s{width:60%}
+
+  .hud{position:fixed;left:22px;top:16px;z-index:40;display:flex;flex-wrap:wrap;gap:8px;max-width:620px}
+  .hud button,.hud a{min-height:34px;display:inline-flex;align-items:center;padding:6px 11px;font-size:13px;
+    font-family:var(--f);color:var(--ink);text-decoration:none;background:rgba(255,255,255,.82);
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .hud button:hover,.hud a:hover{background:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:8px 4px}
+
+  /* 演示控制收进抽屉：默认只留一个开关 */
+  .hud{flex-direction:column;align-items:flex-start;max-width:560px}
+  .hud-panel{display:flex;flex-wrap:wrap;gap:8px;padding:8px;max-width:520px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:10px}
+  .hud.collapsed .hud-panel{display:none}
+  .hud-toggle{background:rgba(255,255,255,.92)}
+
+  .pet{position:fixed;right:0;bottom:8%;z-index:30;cursor:pointer;user-select:none;
+    width:20vw;height:20vh;display:flex;align-items:flex-end;justify-content:flex-end}
+  .pet img{max-width:100%;max-height:100%;width:auto;height:auto;display:block}
+  .pet .collapsed{animation:breathe 4.2s ease-in-out infinite;transform-origin:bottom center}
+  .pet .expanded{display:none}
+  .pet.is-expanded{width:30vw;height:30vh}
+  .pet.is-expanded .collapsed{display:none}
+  .pet.is-expanded .expanded{display:block}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
+  .app{position:fixed;left:50%;top:50%;width:70vw;height:70vh;min-width:880px;min-height:560px;
+    z-index:28;display:flex;flex-direction:column;padding:16px 18px 18px;
+    background:#f2f6fc;border:1px solid var(--line2);border-radius:18px;
+    box-shadow:0 28px 70px rgba(30,50,80,.22);
+    transform:translate(calc(-50% + 110vw), -50%);opacity:0;pointer-events:none;
+    transition:transform .34s cubic-bezier(.2,.7,.2,1),opacity .2s ease}
+  .app.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+
+  .tabs{display:flex;gap:8px;align-items:center;padding-left:4px;margin-bottom:8px;position:relative;z-index:3}
+  .tab{min-height:38px;padding:0 20px;font-size:14px;font-family:var(--f);color:var(--ink2);
+    background:transparent;border:1px solid transparent;border-radius:12px;cursor:pointer;
+    transition:color .15s,background .15s,border-color .15s,box-shadow .15s}
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:#fff;border-color:var(--line2);color:var(--ink);font-weight:600;
+    box-shadow:0 2px 8px rgba(30,50,80,.08)}
+
+  .sheet{position:relative;flex:1;min-height:0;background:#fff;border:1px solid var(--line2);
+    border-radius:14px;padding:26px 30px;overflow:auto}
+
+  .page{display:none}
+  .page.on{display:block}
+
+  .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .ph h3{font-size:16px;margin:0;font-weight:600}
+  .ph button{min-height:34px;padding:0 12px;font-size:13px;font-family:var(--f);color:var(--accent);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .ph button:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+  /* 新建表单：只问两项 */
+  .form{display:none;margin-bottom:12px;padding:14px 16px;background:#f7f9fd;
+    border:1px solid var(--line);border-radius:12px}
+  .form.on{display:block}
+  .form input[type=text],.form textarea{width:100%;padding:0 12px;font-size:14px;font-family:var(--f);
+    color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:10px;outline:none}
+  .form input[type=text]{height:38px}
+  .form textarea{height:60px;padding:9px 12px;margin-top:8px;line-height:1.6;resize:none}
+  .form input[type=text]:focus,.form textarea:focus{border-color:var(--accent)}
+  .form .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .form .foot button{height:34px;padding:0 14px;font-size:13px;font-family:var(--f);border-radius:10px;cursor:pointer}
+  .form .ok{color:#fff;background:var(--accent);border:0}
+  .form .ok:disabled{opacity:.45;cursor:not-allowed}
+  .form .cancel{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+
+
+
+  /* 列表 */
+  .list{display:flex;flex-direction:column}
+  .item{margin-bottom:8px;background:#fff;border:1px solid var(--line);border-radius:12px;
+    transition:background .14s,border-color .14s}
+  .item:hover{border-color:#c6d3e4}
+  .item.marked{background:var(--accent-soft);border-color:#cfdcfb;box-shadow:inset 3px 0 0 var(--accent)}
+  .item.open{border-color:#b9c8dd}
+  .item.done{background:#fafbfe}
+
+  .rowhead{display:flex;align-items:center;gap:14px;min-height:72px;padding:0 16px;cursor:pointer}
+  .check{flex:0 0 auto;width:18px;height:18px;padding:0;display:flex;align-items:center;justify-content:center;
+    background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer;
+    transition:background .14s,border-color .14s}
+  .item.running .check{background:var(--warm-soft);border-color:var(--warm)}
+  .item.done .check{background:var(--accent);border-color:var(--accent)}
+
+  .item .body{flex:0 0 42%;min-width:0;max-width:42%;padding:13px 0}
+  .item .name{font-size:15px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item.done .name{text-decoration:line-through;color:var(--ink3)}
+  .item .desc{flex:1;min-width:0;margin-left:20px;align-self:center;
+    font-size:13px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item.done .desc{color:var(--ink3)}
+  .item .meta{font-size:12px;color:var(--ink3);margin-top:3px;font-variant-numeric:tabular-nums}
+
+  .chip{flex:0 0 auto;font-size:11px;color:var(--accent);background:#fff;
+    border:1px solid #cfdcfb;border-radius:6px;padding:1px 6px}
+  .go{flex:0 0 auto;height:32px;min-width:88px;padding:0 14px;font-size:13px;font-family:var(--f);color:var(--accent);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .go:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .go:disabled{color:var(--ink3);border-color:var(--line);background:#f7f8fb;cursor:not-allowed}
+  .clock{flex:0 0 auto;height:32px;min-width:88px;padding:0 10px;font-size:13px;font-family:var(--f);
+    font-variant-numeric:tabular-nums;color:#fff;background:var(--accent);border:0;border-radius:10px;cursor:pointer}
+
+  /* 展开详情 */
+  .detail{display:none;padding:0 16px 14px;border-top:1px dashed var(--line)}
+  .item.open .detail{display:block;padding-top:12px}
+  .timeline{font-size:12px;color:var(--ink3);margin-bottom:10px;font-variant-numeric:tabular-nums}
+  .d-name{width:100%;height:38px;padding:0 12px;font-size:14px;font-family:var(--f);color:var(--ink);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;outline:none}
+  .d-desc{width:100%;height:60px;margin-top:8px;padding:9px 12px;font-size:13px;line-height:1.6;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line2);
+    border-radius:10px;outline:none;resize:none}
+  .d-name:focus,.d-desc:focus{border-color:var(--accent)}
+  .d-note-label{font-size:11px;color:var(--ink3);margin:10px 0 4px}
+  .d-note{width:100%;height:56px;padding:8px 10px;font-size:13px;line-height:1.6;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line2);
+    border-radius:10px;outline:none;resize:none}
+  .d-note:focus{border-color:var(--accent)}
+  .d-acts{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .d-acts .save{height:32px;padding:0 14px;font-size:13px;font-family:var(--f);color:#fff;
+    background:var(--accent);border:0;border-radius:10px;cursor:pointer}
+  .d-acts .del{height:32px;padding:0 10px;font-size:13px;font-family:var(--f);color:#d94a3d;
+    background:#fff;border:1px solid #f0c9c4;border-radius:10px;cursor:pointer}
+  .d-acts .del:hover{background:#fdf2f1}
+  .d-acts select{height:32px;margin-left:auto;padding:0 6px;font-family:var(--f);font-size:13px;
+    color:var(--ink2);background:#fff;border:1px solid var(--line2);border-radius:10px}
+  .done-hint{font-size:12px;color:var(--ink3);margin-top:10px}
+
+  .empty{display:none;padding:54px 0;text-align:center;color:var(--ink3);font-size:13px}
+  .empty.on{display:block}
+  .empty b{display:block;font-size:15px;color:var(--ink2);margin-bottom:10px;font-weight:600}
+  .empty button{min-height:34px;padding:0 14px;font-size:13px;font-family:var(--f);color:var(--accent);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+
+  .todo{padding:40px 0;text-align:center;color:var(--ink3);font-size:13px}
+
+  /* 计时面板 */
+  .panel{position:fixed;right:0;z-index:32;width:30vw;max-height:40vh;overflow:auto;padding:16px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line2);border-radius:10px;
+    box-shadow:0 12px 32px rgba(30,50,80,.16);backdrop-filter:blur(14px);
+    opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .16s,transform .16s}
+  .panel.on{opacity:1;transform:none;pointer-events:auto}
+  .panel .pn{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .panel .pm{font-size:12px;color:var(--ink3);margin-top:4px}
+  .panel .time{font-size:30px;line-height:1;letter-spacing:.5px;margin:16px 0 14px;
+    font-variant-numeric:tabular-nums}
+  .panel.paused .time{color:var(--ink3)}
+  .panel .acts{display:flex;gap:8px;align-items:center}
+  .panel .acts button{display:flex;align-items:center;justify-content:center;width:44px;min-height:38px;padding:0;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line2);
+    border-radius:10px;cursor:pointer}
+  .panel .acts button:hover{border-color:var(--accent);color:var(--accent)}
+  .panel .acts button.stop{background:#d94a3d;border-color:#d94a3d;color:#fff}
+  .panel .acts button.stop:hover{background:#c8402f;border-color:#c8402f;color:#fff}
+  .panel .acts button.done{flex:1;width:auto;font-size:13px}
+
+  .console{position:fixed;left:22px;bottom:16px;width:380px;max-height:150px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.7;color:#3c4657;background:rgba(255,255,255,.88);
+    border:1px solid var(--line2);border-radius:10px}
+  .console b{font-weight:600;color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="bar">
+    <span class="dot" style="background:#ff5f57"></span>
+    <span class="dot" style="background:#febc2e"></span>
+    <span class="dot" style="background:#28c840"></span>
+    <span class="t">thesis.docx — 第三章</span>
+  </div>
+  <div class="body">
+    <h1>第三章 结论</h1>
+    <div class="rule"></div><div class="rule s"></div><div class="rule"></div><div class="rule s"></div>
+  </div>
+</div>
+
+<div class="hud collapsed" id="hud">
+  <button class="hud-toggle" id="hudToggle">演示控制</button>
+  <div class="hud-panel">
+    <span class="tag">原型控制</span>
+    <button data-act="add">加三件</button>
+    <button data-act="clear">清空看空态</button>
+    <button data-act="day">模拟过一天</button>
+    <button data-act="reset">重置演示数据</button>
+    <a href="第一页-桌面常驻态.html">第 1 页</a>
+    <a href="第二页-悬停小面板.html">第 2 页</a>
+    <a href="第三页-主界面.html">第 3 页</a>
+  </div>
+</div>
+
+<div class="app on" id="app">
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-tab="solo">独立事项</button>
+    <button class="tab" data-tab="projects">我的项目</button>
+    <button class="tab" data-tab="records">我的记录</button>
+    <button class="tab" data-tab="ideas">想法盒</button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <section class="sheet">
+    <div class="page on" id="page-solo">
+      <div class="ph">
+        <h3>独立事项</h3>
+        <button id="newBtn">新建事项</button>
+      </div>
+
+      <div class="form" id="newForm">
+        <input type="text" id="newName" placeholder="事项名称" maxlength="40">
+        <textarea id="newDesc" placeholder="事项说明"></textarea>
+        <div class="foot">
+          <button class="cancel" id="cancelNew">取消</button>
+          <button class="ok" id="okNew" disabled>确定</button>
+        </div>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div class="empty" id="empty">
+        <b>还没有独立的事</b>
+        <button id="emptyNew">新建事项</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-projects">
+      <div class="ph"><h3>我的项目</h3></div>
+      <div class="todo">这一页在第 3 页里，点「我的项目」标签看。</div>
+    </div>
+
+    <div class="page" id="page-records">
+      <div class="ph"><h3>我的记录</h3></div>
+      <div class="todo">这一页还没设计，等讨论定了再画。</div>
+    </div>
+
+    <div class="page" id="page-ideas">
+      <div class="ph"><h3>想法盒</h3></div>
+      <div class="todo">这一页还没设计，等讨论定了再画。</div>
+    </div>
+
+    <div class="page" id="page-settings">
+      <div class="ph"><h3>设置</h3></div>
+      <div class="todo">这一页还没设计，等讨论定了再画。</div>
+    </div>
+  </section>
+</div>
+
+<aside class="panel" id="panel">
+  <div class="pn" id="panelName">回面试邮件</div>
+  <div class="pm">独立事项</div>
+  <div class="time" id="panelTime">00:00</div>
+  <div class="acts">
+    <button id="pauseBtn" title="暂停" aria-label="暂停">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"></path></svg>
+    </button>
+    <button id="stopBtn" class="stop" title="停止" aria-label="停止">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+        <rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+    </button>
+    <button id="doneBtn" class="done">标记完成</button>
+  </div>
+</aside>
+
+<div class="pet is-expanded" id="pet">
+  <img class="collapsed" src="../assets/桌宠/常驻右-240.png" alt="桌宠收起态">
+  <img class="expanded" src="../assets/桌宠/展开-360.png" alt="桌宠展开态">
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：主界面已打开，默认停在「独立事项」</div></div>
+
+<script>
+(function(){
+  var app=document.getElementById('app'), pet=document.getElementById('pet'),
+      list=document.getElementById('list'), empty=document.getElementById('empty'),
+      form=document.getElementById('newForm'), newName=document.getElementById('newName'),
+      newDesc=document.getElementById('newDesc'), okNew=document.getElementById('okNew'),
+      logBox=document.getElementById('log'), panel=document.getElementById('panel'),
+      panelName=document.getElementById('panelName'), panelTime=document.getElementById('panelTime');
+
+  function log(n,x){
+    var d=document.createElement('div');
+    d.innerHTML='<b>'+n+'</b>'+(x?' · '+x:'');
+    logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight;
+  }
+
+  var seed=[
+    {id:'i1', name:'回面试邮件', desc:'和 HR 约周四下午', created:'今天建的', ts:100, spentSec:0, marked:true, done:false},
+    {id:'i2', name:'交电费', desc:'', created:'昨天', ts:90, spentSec:0, marked:false, done:false},
+    {id:'i3', name:'把发票拍了报销', desc:'三张，月底前交', created:'3 天前', ts:80, spentSec:12*60, marked:false, done:false},
+    {id:'i4', name:'预约体检', desc:'', created:'一周前', ts:70, spentSec:25*60, marked:false, done:false},
+    {id:'i5', name:'退掉那个订阅', desc:'自动续费要关掉', created:'一周前', ts:60, spentSec:0, marked:false, done:false},
+    {id:'i6', name:'给导师回一封邮件', desc:'', created:'今天建的', ts:110, spentSec:0, marked:false, done:false}
+  ];
+
+  var items=[], T={}, panelId=null, seq=300, openId=null;
+
+  function scratchGet(id){
+    try{ return (JSON.parse(localStorage.getItem('scratchNotes')||'{}'))[id]||''; }catch(e){ return ''; }
+  }
+  function scratchSet(id, v){
+    var o={}; try{ o=JSON.parse(localStorage.getItem('scratchNotes')||'{}'); }catch(e){ o={}; }
+    if(v) o[id]=v; else delete o[id];
+    localStorage.setItem('scratchNotes', JSON.stringify(o));
+  }
+
+  function cloneSeed(){
+    return seed.map(function(o){
+      return {id:o.id, name:o.name, desc:o.desc, created:o.created, ts:o.ts,
+              spentSec:o.spentSec, marked:o.marked, done:false, doneAt:null};
+    });
+  }
+
+  function reset(){
+    items=cloneSeed(); T={}; panelId=null; openId=null;
+    hidePanel(); render();
+  }
+
+  function find(id){
+    for(var i=0;i<items.length;i++) if(items[i].id===id) return items[i];
+    return null;
+  }
+
+  function st(id){ T[id]=T[id]||{run:false,paused:false,acc:0,from:0}; return T[id]; }
+  function elapsed(s){ return s.acc + (s.run && !s.paused ? Date.now()-s.from : 0); }
+  function fmt(ms){
+    var t=Math.floor(ms/1000);
+    return ('0'+Math.floor(t/60)).slice(-2)+':'+('0'+(t%60)).slice(-2);
+  }
+  function minutes(sec){ return Math.max(1, Math.round(sec/60)); }
+
+  function sorted(){
+    var todo=items.filter(function(i){ return !i.done; }).sort(function(a,b){
+      return (b.marked?1:0)-(a.marked?1:0) || b.ts-a.ts;
+    });
+    var fin=items.filter(function(i){ return i.done; }).sort(function(a,b){
+      return (b.doneAt||0)-(a.doneAt||0);
+    });
+    return todo.concat(fin);
+  }
+
+  function timelineText(it){
+    var s=st(it.id);
+    var state = s.run ? (s.paused ? '已暂停 '+fmt(elapsed(s)) : '正在计时 '+fmt(elapsed(s))) : '没在计时';
+    return '累计 '+minutes(it.spentSec)+' 分钟 · '+state;
+  }
+
+  function svgTick(){
+    return '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#fff" stroke-width="3"'+
+           ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5.5 5.5L20 6.5"></path></svg>';
+  }
+
+  function render(){
+    var rows=sorted();
+    list.innerHTML='';
+    rows.forEach(function(it){
+      var s=st(it.id);
+
+      var el=document.createElement('div');
+      el.className='item'
+        + (it.marked?' marked':'')
+        + (s.run?' running':'')
+        + (it.done?' done':'')
+        + (openId===it.id?' open':'');
+      el.dataset.id=it.id;
+
+      /* 行头 */
+      var head=document.createElement('div'); head.className='rowhead';
+
+      var chk=document.createElement('button');
+      chk.type='button'; chk.className='check';
+      chk.setAttribute('aria-label', it.done?'取消完成':'标记完成');
+      if(it.done) chk.innerHTML=svgTick();
+      chk.addEventListener('click', function(e){ e.stopPropagation(); toggleDone(it.id); });
+
+      var body=document.createElement('div'); body.className='body';
+      var name=document.createElement('div'); name.className='name'; name.textContent=it.name;
+      body.appendChild(name);
+      var meta=document.createElement('div'); meta.className='meta';
+      meta.textContent = it.created + (it.spentSec>0 ? ' · 已做 '+minutes(it.spentSec)+' 分钟' : '');
+      body.appendChild(meta);
+
+      head.appendChild(chk); head.appendChild(body);
+
+      // 说明放在行的中间，垂直居中，不把行撑高。
+      // 没有说明也渲染这一段，靠它撑住弹性空间，右侧按钮才不会跟着文字长度左右跑
+      var desc=document.createElement('div');
+      desc.className='desc';
+      desc.textContent = it.desc || '';
+      head.appendChild(desc);
+
+      if(it.marked && !it.done){
+        var chip=document.createElement('span'); chip.className='chip'; chip.textContent='当前';
+        head.appendChild(chip);
+      }
+
+      var btn=document.createElement('button');
+      if(it.done){
+        btn.className='go'; btn.textContent='已完成'; btn.disabled=true;
+      } else if(s.run){
+        btn.className='clock'; btn.textContent=fmt(elapsed(s));
+        btn.addEventListener('click', function(e){ e.stopPropagation(); showPanel(it.id); });
+      } else {
+        btn.className='go'; btn.textContent='开始';
+        btn.addEventListener('click', function(e){ e.stopPropagation(); start(it.id); });
+      }
+      head.appendChild(btn);
+
+      head.addEventListener('click', function(){ toggleOpen(it.id); });
+
+      /* 详情 */
+      var detail=document.createElement('div'); detail.className='detail';
+
+      var tl=document.createElement('div'); tl.className='timeline'; tl.dataset.tl=it.id;
+      tl.textContent=timelineText(it);
+      detail.appendChild(tl);
+
+      var nameIn=document.createElement('input');
+      nameIn.className='d-name'; nameIn.type='text'; nameIn.value=it.name; nameIn.maxLength=40;
+      nameIn.placeholder='事项名称';
+      nameIn.addEventListener('click', function(e){ e.stopPropagation(); });
+      detail.appendChild(nameIn);
+
+      var descIn=document.createElement('textarea');
+      descIn.className='d-desc'; descIn.placeholder='事项说明'; descIn.value=it.desc||'';
+      descIn.addEventListener('click', function(e){ e.stopPropagation(); });
+      detail.appendChild(descIn);
+
+      var noteLabel=document.createElement('div'); noteLabel.className='d-note-label'; noteLabel.textContent='随手记';
+      var noteIn=document.createElement('textarea');
+      noteIn.className='d-note'; noteIn.placeholder='记一笔这一步的成果';
+      noteIn.value=scratchGet(it.id);
+      noteIn.addEventListener('click', function(e){ e.stopPropagation(); });
+      detail.appendChild(noteLabel); detail.appendChild(noteIn);
+
+      // 输入时也先存一份，避免没点「保存」就丢掉
+      var autoTimer=null;
+      function autoSave(){
+        clearTimeout(autoTimer);
+        autoTimer=setTimeout(function(){
+          try{
+            it.name = nameIn.value.trim() || it.name;
+            it.desc = descIn.value.trim();
+            scratchSet(it.id, noteIn.value.trim());
+          }catch(err){ log('自动保存失败', String((err&&err.message)||err)); }
+        }, 600);
+      }
+      nameIn.addEventListener('input', autoSave);
+      descIn.addEventListener('input', autoSave);
+      noteIn.addEventListener('input', autoSave);
+
+      var acts=document.createElement('div'); acts.className='d-acts';
+
+      var save=document.createElement('button');
+      save.className='save'; save.textContent='保存';
+      save.addEventListener('click', function(e){
+        e.stopPropagation();
+        try{
+          var v=nameIn.value.trim();
+          it.name = v || it.name;
+          it.desc = descIn.value.trim();
+          scratchSet(it.id, noteIn.value.trim());   // 随手记跟着保存一起写
+          openId=null;                             // 存完收起详情
+          render(); log('已保存', it.name+(it.desc?' · 带说明':''));
+        }catch(err){
+          log('保存失败', String((err&&err.message)||err));
+        }
+      });
+
+      var del=document.createElement('button');
+      del.className='del'; del.textContent='删除';
+      del.addEventListener('click', function(e){ e.stopPropagation(); removeItem(it.id); });
+
+      var move=document.createElement('select');
+      // 项目列表 = 三个内置的 + 第 6 页新建过的
+      var opts=[['','移到项目'],['毕业论文','毕业论文'],['求职','求职'],['配音练习','配音练习']];
+      var custom=[];
+      try{ custom=JSON.parse(localStorage.getItem('customProjects')||'[]'); }catch(e){ custom=[]; }
+      custom.forEach(function(c){
+        if(!c || !c.name) return;
+        var dup=opts.some(function(o){ return o[1]===c.name; });
+        if(!dup) opts.push([c.name, c.name]);
+      });
+      opts.forEach(function(p){
+        var o=document.createElement('option'); o.value=p[0]; o.textContent=p[1]; move.appendChild(o);
+      });
+      move.addEventListener('click', function(e){ e.stopPropagation(); });
+      move.addEventListener('change', function(e){
+        e.stopPropagation();
+        if(!move.value) return;
+        moveItem(it.id, move.value);
+      });
+
+      acts.appendChild(save); acts.appendChild(del); acts.appendChild(move);
+      detail.appendChild(acts);
+
+      if(it.done){
+        var dh=document.createElement('div'); dh.className='done-hint';
+        dh.textContent='已完成，明天自动从列表移出';
+        detail.appendChild(dh);
+      }
+
+      el.appendChild(head); el.appendChild(detail);
+      list.appendChild(el);
+    });
+
+    var none = rows.length===0;
+    list.style.display = none ? 'none' : 'flex';
+    empty.classList.toggle('on', none);
+  }
+
+  function toggleOpen(id){
+    openId = (openId===id) ? null : id;
+    render();
+  }
+
+  /* ---------- 完成 / 删除 / 移动 ---------- */
+  function toggleDone(id){
+    var it=find(id); if(!it) return;
+    var s=st(id);
+    if(!it.done){
+      if(s.run){ s.acc=elapsed(s); s.run=false; s.paused=false; it.spentSec=s.acc/1000; }
+      it.done=true; it.doneAt=Date.now(); it.marked=false;
+      log('已完成', it.name+' · 明天自动移出');
+    } else {
+      it.done=false; it.doneAt=null;
+      log('取消完成', it.name);
+    }
+    if(panelId===id) hidePanel();
+    render();
+  }
+
+  function removeItem(id){
+    var it=find(id); if(!it) return;
+    items=items.filter(function(i){ return i.id!==id; });
+    delete T[id];
+    if(panelId===id) hidePanel();
+    if(openId===id) openId=null;
+    render(); log('删除', it.name);
+  }
+
+  function moveItem(id, proj){
+    var it=find(id); if(!it) return;
+    items=items.filter(function(i){ return i.id!==id; });
+    delete T[id];
+    if(panelId===id) hidePanel();
+    if(openId===id) openId=null;
+
+    // 落到项目里：第 6 页项目详情会读这个键，把这条显示在「本项目的待办」
+    var moved=[];
+    try{ moved=JSON.parse(localStorage.getItem('movedToProject')||'[]'); }catch(e){ moved=[]; }
+    var at=Date.now();
+    var newId='mv-'+proj+'-'+at;         // 项目里这条的 id，两端要用同一个
+    var note=scratchGet(id);
+    moved.push({project:proj, name:it.name, desc:it.desc||'', at:at, srcId:id, scratch:note});
+    localStorage.setItem('movedToProject', JSON.stringify(moved));
+
+    scratchSet(newId, note);            // 随手记跟着搬过去
+    scratchSet(id, '');                  // 原来的不留残影
+
+    render(); log('移到项目', it.name+' → '+proj);
+  }
+
+  /* ---------- 计时 ---------- */
+  function start(id){
+    var it=find(id); if(!it || it.done) return;
+    items.forEach(function(i){ i.marked=(i.id===id); });
+    var s=st(id);
+    if(!s.run){ s.run=true; s.paused=false; s.from=Date.now(); }
+    log('evt_start', it.name);
+    close();
+    render();
+    showPanel(id);
+  }
+
+  function showPanel(id){
+    panelId=id;
+    var it=find(id); if(!it) return;
+    panelName.textContent=it.name;
+    panel.classList.add('on');
+    panel.classList.toggle('paused', !!st(id).paused);
+    renderPauseBtn();
+    panelTime.textContent=fmt(elapsed(st(id)));
+    positionPanel();
+  }
+  function hidePanel(){ panel.classList.remove('on'); panelId=null; }
+
+  function positionPanel(){
+    if(!panel.classList.contains('on')) return;
+    var img=pet.querySelector('.expanded');
+    if(!img || getComputedStyle(img).display==='none') img=pet.querySelector('.collapsed');
+    var r=img.getBoundingClientRect();
+    var top=Math.max(12, Math.min(r.top+5, innerHeight-panel.offsetHeight-12));
+    panel.style.top=top+'px';
+    panel.style.right=(r.width-15)+'px';
+  }
+
+  function renderPauseBtn(){
+    var b=document.getElementById('pauseBtn'), s=panelId?st(panelId):null;
+    var paused = s && s.paused;
+    b.setAttribute('aria-label', paused?'继续':'暂停');
+    b.title = paused?'继续':'暂停';
+    b.innerHTML = paused
+      ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"></path></svg>'
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"></path></svg>';
+  }
+
+  document.getElementById('pauseBtn').addEventListener('click', function(){
+    if(!panelId) return;
+    var s=st(panelId);
+    if(!s.run) return;
+    if(s.paused){ s.paused=false; s.from=Date.now(); }
+    else { s.acc=elapsed(s); s.paused=true; }
+    panel.classList.toggle('paused', s.paused);
+    renderPauseBtn(); render();
+    log(s.paused?'暂停':'继续','');
+  });
+
+  document.getElementById('stopBtn').addEventListener('click', function(){
+    if(!panelId) return;
+    var id=panelId, s=st(id);
+    s.acc=elapsed(s); s.run=false; s.paused=false;
+    var it=find(id);
+    if(it) it.spentSec=s.acc/1000;
+    var name=it?it.name:'';
+    hidePanel(); render();
+    log('evt_stop', name+' · 已做 '+minutes(s.acc/1000)+' 分钟');
+  });
+
+  document.getElementById('doneBtn').addEventListener('click', function(){
+    if(!panelId) return;
+    toggleDone(panelId);
+  });
+
+  setInterval(function(){
+    var cs=list.querySelectorAll('.clock');
+    for(var i=0;i<cs.length;i++){
+      var el=cs[i].closest('.item');
+      cs[i].textContent=fmt(elapsed(st(el.dataset.id)));
+    }
+    if(panelId && panel.classList.contains('on')) panelTime.textContent=fmt(elapsed(st(panelId)));
+    var tls=list.querySelectorAll('.timeline');
+    for(var j=0;j<tls.length;j++){
+      var it=find(tls[j].dataset.tl);
+      if(it && st(it.id).run) tls[j].textContent=timelineText(it);
+    }
+  },250);
+
+  /* ---------- 新建 ---------- */
+  function openForm(){
+    form.classList.add('on');
+    newName.value=''; newDesc.value=''; okNew.disabled=true;
+    newName.focus();
+  }
+  function closeForm(){ form.classList.remove('on'); }
+
+  document.getElementById('newBtn').addEventListener('click', openForm);
+  document.getElementById('emptyNew').addEventListener('click', openForm);
+  document.getElementById('cancelNew').addEventListener('click', closeForm);
+  newName.addEventListener('input', function(){ okNew.disabled = !newName.value.trim(); });
+
+  okNew.addEventListener('click', function(){
+    var name=newName.value.trim();
+    if(!name) return;
+    var desc=newDesc.value.trim();
+    seq+=10;
+    items.push({id:'n'+seq, name:name, desc:desc, created:'今天建的', ts:seq,
+                spentSec:0, marked:false, done:false, doneAt:null});
+    closeForm(); render();
+    log('新建事项', name+(desc?' · 带说明':''));
+  });
+
+  /* ---------- 开合 ---------- */
+  function open(){
+    app.classList.add('on'); pet.classList.add('is-expanded');
+    hidePanel(); positionPanel();
+    log('evt_panel_open','主界面滑出并居中');
+  }
+  function close(){
+    app.classList.remove('on'); pet.classList.remove('is-expanded');
+    log('主界面收起','回桌面');
+  }
+  pet.addEventListener('click', function(){
+    app.classList.contains('on') ? close() : open();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape') return;
+    if(panel.classList.contains('on')){ hidePanel(); return; }
+    if(form.classList.contains('on')){ closeForm(); return; }
+    if(openId){ openId=null; render(); return; }
+    if(app.classList.contains('on')) close();
+  });
+
+  document.getElementById('tabs').addEventListener('click', function(e){
+    var btn=e.target.closest('.tab'); if(!btn) return;
+    var bs=document.querySelectorAll('#tabs .tab');
+    for(var i=0;i<bs.length;i++){
+      var on=bs[i].dataset.tab===btn.dataset.tab;
+      bs[i].classList.toggle('on', on);
+      var page=document.getElementById('page-'+bs[i].dataset.tab);
+      if(page) page.classList.toggle('on', on);
+    }
+    log('切到标签', btn.textContent);
+  });
+
+  document.querySelector('.hud').addEventListener('click', function(e){
+    var act=e.target.dataset.act; if(!act) return;
+    if(act==='add'){
+      ['把报销单寄出去','整理一下书桌','回一条拖延的消息'].forEach(function(n){
+        seq+=10;
+        items.push({id:'x'+seq, name:n, desc:'', created:'今天建的', ts:seq,
+                    spentSec:0, marked:false, done:false, doneAt:null});
+      });
+      render(); log('加三件','用来试滚动');
+    }
+    if(act==='clear'){ items=[]; T={}; panelId=null; openId=null; hidePanel(); render(); log('清空','看空态'); }
+    if(act==='day'){
+      var before=items.length;
+      items=items.filter(function(i){ return !i.done; });
+      openId=null; render();
+      log('模拟过一天','移出 '+(before-items.length)+' 件已完成的');
+    }
+    if(act==='reset'){ reset(); log('重置演示数据',''); }
+  });
+
+  var hudToggle=document.getElementById('hudToggle');
+  if(hudToggle){
+    hudToggle.addEventListener('click', function(){
+      var collapsed=document.getElementById('hud').classList.toggle('collapsed');
+      hudToggle.textContent = collapsed?'演示控制':'收起演示';
+    });
+  }
+
+  addEventListener('resize', positionPanel);
+  reset();
+})();
+</script>
+</body>
+</html>

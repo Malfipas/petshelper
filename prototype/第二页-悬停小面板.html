@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>第 2 页 · 悬停小面板</title>
+<style>
+  :root{
+    --bg1:#eef2f7; --bg2:#dfe6ef;
+    --glass:rgba(255,255,255,.86);
+    --line:#c9d4e3; --ink:#1f2937; --ink2:#5b6676;
+    --accent:#2563eb; --accent-soft:#e8effd; --track:#d8e0ec;
+    --r:10px; --shadow:0 12px 32px rgba(30,50,80,.16);
+    --f:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f);color:var(--ink);overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+
+  .win{position:absolute;left:120px;top:110px;width:min(880px,62vw);background:#fff;
+       border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  .win .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f4f7fb;border-bottom:1px solid var(--line)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .win .t{font-size:13px;color:var(--ink2);margin-left:6px}
+  .win .body{padding:26px 30px}
+  .win h1{font-size:19px;margin:0 0 14px;font-weight:600}
+  .rule{height:12px;border-radius:6px;background:#eef1f6;margin:10px 0}
+  .rule.s{width:62%}
+
+  .hud{position:fixed;left:22px;top:20px;z-index:40;display:flex;flex-wrap:wrap;gap:8px;max-width:560px}
+  .hud button{min-height:36px;padding:7px 12px;font-size:13px;font-family:var(--f);color:var(--ink);
+    background:rgba(255,255,255,.8);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+  .hud button:hover{background:#fff}
+  .hud .on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:9px 4px}
+
+  /* 左右贴边：宠物换到左缘时，面板翻到它右侧 */
+  .pet.side-left{left:0;right:auto;justify-content:flex-start}
+  .pet.dragging{transition:none}
+  .ai button:disabled{opacity:.4;cursor:not-allowed}
+  .ai textarea[readonly]{background:#f4f7fb;color:var(--ink2);cursor:pointer}
+  .scratch{margin:10px 0 8px}
+  .scratch .slabel{font-size:11px;color:var(--ink3);margin-bottom:4px}
+  .scratch textarea{width:100%;height:30px;padding:5px 8px;font-size:12px;line-height:1.5;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line2);
+    border-radius:8px;outline:none;resize:none}
+  .scratch textarea:focus{border-color:var(--accent)}
+
+  /* 面板空态：没有当前事务时只留两行 */
+  .pe{display:none;padding:4px 2px 8px}
+  .pe .t{font-size:14px;font-weight:600;color:var(--ink)}
+  .pe .s{font-size:12px;color:var(--ink3);margin-top:6px}
+  .panel.empty #panelBody{display:none}
+  .panel.empty .pe{display:block}
+
+  /* 演示控制收进抽屉：默认只留一个开关 */
+  .hud{flex-direction:column;align-items:flex-start;max-width:560px}
+  .hud-panel{display:flex;flex-wrap:wrap;gap:8px;padding:8px;max-width:520px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:10px}
+  .hud.collapsed .hud-panel{display:none}
+  .hud-toggle{background:rgba(255,255,255,.92)}
+
+  .pet{position:fixed;right:0;z-index:30;cursor:pointer;user-select:none;
+       width:20vw;height:20vh;display:flex;align-items:flex-end;justify-content:flex-end}
+  .pet img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;
+    animation:breathe 4.2s ease-in-out infinite;transform-origin:bottom center}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
+  .panel{position:fixed;z-index:32;width:30vw;max-height:40vh;overflow-y:auto;padding:16px;background:var(--glass);
+    border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(14px);
+    opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .16s,transform .16s,top .18s}
+  .panel.on{opacity:1;transform:none;pointer-events:auto}
+
+  .pname{font-size:15px;font-weight:600}
+  .track{display:flex;gap:5px;margin:11px 0 12px}
+  .track i{flex:1;height:5px;border-radius:3px;background:var(--track);cursor:default;transition:background .15s}
+  .track i.done{background:var(--accent)}
+  .track i:hover{filter:brightness(.94)}
+
+  .step{font-size:14px;line-height:1.6;margin:0 0 4px}
+  .meta{font-size:12px;color:var(--ink2);margin-bottom:12px}
+
+  .ai{display:flex;gap:8px;align-items:flex-end}
+  .ai textarea{flex:1;min-height:36px;max-height:104px;padding:8px 10px;font-size:13px;line-height:20px;
+    font-family:var(--f);color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;
+    resize:none;overflow-y:auto;outline:none;transition:border-color .15s}
+  .ai textarea:focus{border-color:var(--accent)}
+  .ai button{display:flex;align-items:center;justify-content:center;width:42px;min-height:36px;padding:0;
+    border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink2);cursor:pointer;
+    transition:color .15s,border-color .15s,background .15s}
+  .ai button:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+
+  .answers{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  .answer{font-size:13px;line-height:1.65;padding:10px 12px;border-radius:8px;
+    background:var(--accent-soft);border:1px solid #cfdcfb;color:#1f3a6e}
+  .answer .q{display:block;font-size:12px;color:#4b6591;margin-bottom:4px}
+
+  .go{width:100%;min-height:44px;margin-top:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;
+    font-size:15px;font-family:var(--f);cursor:pointer}
+  .go:hover{filter:brightness(1.06)}
+  .skip{margin-top:8px;text-align:center;font-size:12px;color:var(--ink2);cursor:pointer}
+  .skip:hover{color:var(--ink)}
+
+  /* 计时条：左侧时间，右侧暂停与停止 */
+  .timerbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+  .clock{font-size:21px;line-height:1;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+  .timerbar .acts{display:flex;gap:8px}
+  .timerbar button{display:flex;align-items:center;justify-content:center;width:44px;min-height:38px;padding:0;
+    color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+  .timerbar button:hover{border-color:var(--accent);color:var(--accent)}
+  .timerbar button.stop{background:#d94a3d;border-color:#d94a3d;color:#fff}
+  .timerbar button.stop:hover{background:#c8402f;border-color:#c8402f;color:#fff}
+  .timerbar.paused .clock{color:var(--ink2)}
+
+  .donenote{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f1f5ec;border:1px solid #d9e4cc;
+    color:#4d5c3c;font-size:13px;text-align:center}
+  .chip{display:inline-block;margin-left:8px;padding:1px 6px;font-size:11px;font-weight:400;color:var(--accent);
+    background:var(--accent-soft);border:1px solid #cfdcfb;border-radius:6px;vertical-align:2px}
+
+  .tip{position:fixed;z-index:33;padding:6px 9px;font-size:12px;line-height:1.4;color:#fff;background:#243044;
+    border-radius:6px;pointer-events:none;opacity:0;transition:opacity .12s;white-space:nowrap}
+  .tip.on{opacity:1}
+
+  .console{position:fixed;left:22px;bottom:20px;width:380px;max-height:180px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.7;color:#3c4657;background:rgba(255,255,255,.86);
+    border:1px solid var(--line);border-radius:10px}
+  .console b{font-weight:600;color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="bar">
+    <span class="dot" style="background:#ff5f57"></span>
+    <span class="dot" style="background:#febc2e"></span>
+    <span class="dot" style="background:#28c840"></span>
+    <span class="t">thesis.docx — 第三章</span>
+  </div>
+  <div class="body">
+    <h1>第三章 结论</h1>
+    <div class="rule"></div><div class="rule s"></div><div class="rule"></div><div class="rule s"></div>
+  </div>
+</div>
+
+<div class="hud collapsed" id="hud">
+  <button class="hud-toggle" id="hudToggle">演示控制</button>
+  <div class="hud-panel">
+    <span class="tag">原型控制</span>
+    <button data-act="formA" class="on">形态 A 项目内事务</button>
+    <button data-act="formB">形态 B 独立事务</button>
+    <button data-act="formC">同项目的另一件事</button>
+    <button data-act="mark">把这个标记为当前</button>
+    <button data-act="steps3">3 步</button>
+    <button data-act="steps5">5 步</button>
+    <button data-act="steps7" class="on">7 步</button>
+    <button data-act="key">未配置 key</button>
+    <button data-act="side">换到另一侧</button>
+    <button data-act="none">无当前事务</button>
+    <button onclick="location.href='整体原型.html'">整体原型</button>
+  </div>
+</div>
+
+<aside class="panel" id="panel">
+  <div id="panelBody">
+  <div id="formA">
+    <div class="pname" id="nameA">毕业论文</div>
+    <div class="track" id="track"></div>
+    <p class="step" id="stepText">把第三章结论写成三句话</p>
+    <div class="meta" id="stepMeta">第 3 步 / 共 7 步 · 约 5 分钟</div>
+  </div>
+  <div id="formB" style="display:none">
+    <div class="pname" id="nameB">回面试邮件</div>
+    <div class="meta">独立事务</div>
+  </div>
+
+  <div class="scratch">
+    <div class="slabel">随手记</div>
+    <textarea id="scratchIn" rows="1" placeholder="记一笔这一步的成果"></textarea>
+  </div>
+
+  <div class="ai">
+    <textarea id="ask" rows="1" placeholder="有什么我能帮助你的吗？"></textarea>
+    <button id="send" aria-label="发送">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21.5 2.5 10.8 21.3l-2.4-7.1-6.9-2.4z"></path>
+        <path d="M21.5 2.5 8.4 14.2"></path>
+      </svg>
+    </button>
+  </div>
+  <div class="answers" id="answers"></div>
+
+  <div class="action" id="action"></div>
+  </div>
+  <div class="pe" id="panelEmpty">
+    <div class="t">当前无正在进行的事务</div>
+    <div class="s">点桌宠进主界面挑一件</div>
+  </div>
+</aside>
+
+<div class="tip" id="tip"></div>
+
+<div class="pet" id="pet">
+  <img src="../assets/桌宠/常驻右-240.png" alt="桌宠收起态">
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：把光标停在宠物身上，300 毫秒后出面板</div></div>
+
+<script>
+(function(){
+  var pet=document.getElementById('pet'), panel=document.getElementById('panel'),
+      track=document.getElementById('track'), tip=document.getElementById('tip'),
+      logBox=document.getElementById('log'), answers=document.getElementById('answers'),
+      ask=document.getElementById('ask'), stepText=document.getElementById('stepText'),
+      stepMeta=document.getElementById('stepMeta');
+
+  var hoverIn=null, hoverOut=null, task='A';
+
+  /* 随手记：三个入口共用一份，按事务 id 存 */
+  function scratchGet(id){
+    try{ return (JSON.parse(localStorage.getItem('scratchNotes')||'{}'))[id]||''; }catch(e){ return ''; }
+  }
+  function scratchSet(id, v){
+    var o={}; try{ o=JSON.parse(localStorage.getItem('scratchNotes')||'{}'); }catch(e){ o={}; }
+    if(v) o[id]=v; else delete o[id];
+    localStorage.setItem('scratchNotes', JSON.stringify(o));
+  }
+  function markAiUsed(id){
+    var o={}; try{ o=JSON.parse(localStorage.getItem('aiUsed')||'{}'); }catch(e){ o={}; }
+    o[id]=true; localStorage.setItem('aiUsed', JSON.stringify(o));
+  }
+
+  // 每件事一个 id；对话与计时都按 id 存，互不相通，同项目的两件也不共享
+  var TASKS={
+    A:{id:'t-结论', name:'毕业论文', form:'A', line:'把第三章结论写成三句话', total:7, current:3, min:5, marked:true},
+    B:{id:'t-邮件', name:'回面试邮件', form:'B', line:'', total:0, current:0, min:0, marked:false},
+    C:{id:'t-图注', name:'毕业论文', form:'A', line:'把三张图的图注对一遍', total:7, current:4, min:4, marked:false}
+  };
+  // 计时状态按事务 id 存：run 在跑、paused 暂停、acc 已累计、from 本段起点、done 已完成
+  var TIMER={};
+  function timer(id){
+    TIMER[id]=TIMER[id]||{run:false,paused:false,acc:0,from:0,done:false};
+    return TIMER[id];
+  }
+  function elapsed(s){ return s.acc + (s.run && !s.paused ? Date.now()-s.from : 0); }
+  function fmt(ms){
+    var s=Math.floor(ms/1000);
+    return ('0'+Math.floor(s/60)).slice(-2)+':'+('0'+(s%60)).slice(-2);
+  }
+  var chats={};
+
+  var NAMES=[
+    '读文献','写提纲','写结论','对图表','通读一遍','排版','交给导师',
+    '补附录','再看一遍'
+  ];
+
+  var SIDE=localStorage.getItem('petSide2')||'right';
+  var hasKey=localStorage.getItem('aiKey')==='1';
+  var noCurrent=false;   // 演示用：没有当前事务时面板只剩一句提示
+  pet.style.top=(localStorage.getItem('petTop2')||Math.round(innerHeight*0.42))+'px';
+
+  function placeX(el, w){
+    if(SIDE==='right'){ el.style.right=(w-15)+'px'; el.style.left='auto'; }
+    else { el.style.left=(w-15)+'px'; el.style.right='auto'; }
+  }
+  // 贴哪侧换哪张图：右缘用「常驻右」，左缘用「常驻」
+  var PET_SRC={right:'../assets/桌宠/常驻右-240.png', left:'../assets/桌宠/常驻-240.png'};
+  function applySide(){
+    pet.classList.toggle('side-left', SIDE==='left');
+    var img=pet.querySelector('img');
+    if(img){
+      if(img.getAttribute('src')!==PET_SRC[SIDE]) img.src=PET_SRC[SIDE];
+      img.onload=positionFloating;
+    }
+    positionFloating();
+  }
+
+  function log(n,x){var d=document.createElement('div');d.innerHTML='<b>'+n+'</b>'+(x?' · '+x:'');
+    logBox.appendChild(d);logBox.scrollTop=logBox.scrollHeight;}
+
+  function buildTrack(t){
+    track.innerHTML='';
+    for(var i=1;i<=t.total;i++){
+      var seg=document.createElement('i');
+      if(i<=t.current) seg.className='done';
+      seg.dataset.n=i;
+      seg.addEventListener('mouseenter', function(){
+        var n=this.dataset.n;
+        tip.textContent='第 '+n+' 步 · '+NAMES[(n-1)%NAMES.length];
+        tip.classList.add('on');
+        var r=this.getBoundingClientRect();
+        tip.style.left=(r.left+r.width/2-tip.offsetWidth/2)+'px';
+        tip.style.top=(r.top-tip.offsetHeight-8)+'px';
+        log('悬停第 '+n+' 步', NAMES[(n-1)%NAMES.length]);
+      });
+      seg.addEventListener('mouseleave', function(){ tip.classList.remove('on'); });
+      track.appendChild(seg);
+    }
+    stepText.textContent=t.line;
+    stepMeta.textContent='第 '+t.current+' 步 / 共 '+t.total+' 步 · 约 '+t.min+' 分钟';
+  }
+
+  // 只渲染当前这件事的对话，切到别的事就看不到这边的内容
+  function renderAnswers(){
+    var t=TASKS[task], list=chats[t.id]||[];
+    answers.innerHTML='';
+    list.forEach(function(m){
+      var box=document.createElement('div');
+      box.className='answer';
+      box.innerHTML='<span class="q">你问：'+m.q+'</span>'+m.a;
+      answers.appendChild(box);
+    });
+
+  }
+
+  function setTask(k){
+    task=k;
+    var t=TASKS[k];
+    var chip=t.marked?'<span class="chip">已标记</span>':'';
+    document.getElementById('formA').style.display = t.form==='A'?'':'none';
+    document.getElementById('formB').style.display = t.form==='B'?'':'none';
+    if(t.form==='A'){ document.getElementById('nameA').innerHTML=t.name+chip; buildTrack(t); }
+    else { document.getElementById('nameB').innerHTML=t.name+chip; }
+    document.getElementById('scratchIn').value = scratchGet(t.id);   // 随手记跟着当前事务走
+    renderAnswers();
+    renderAction();
+    log('切到', t.name+(t.form==='A'?' 第 '+t.current+' 步':' · 独立事务'));
+  }
+
+  // 面板以桌宠图片本身为基准：右偏移 = 图宽 + 5，顶部从图顶往下 5 起
+  var GAP=5;
+  function positionFloating(){
+    var r=pet.querySelector('img').getBoundingClientRect();
+    var ph=panel.offsetHeight;
+    var pt=Math.max(12, Math.min(r.top+GAP, innerHeight-ph-12));
+    panel.style.top=pt+'px';
+    placeX(panel, r.width);
+  }
+
+  function applyEmpty(){
+    panel.classList.toggle('empty', noCurrent);
+    positionFloating();
+  }
+
+  function openPanel(){
+    panel.classList.add('on');
+    applyEmpty();
+    log('evt_step_shown');
+  }
+  function closePanel(){
+    panel.classList.remove('on'); tip.classList.remove('on');
+  }
+
+  // 光标在面板里、或正在输入时不收起，避免打字打到一半窗口没了
+  var pinned=false;
+  function shouldStayOpen(){
+    return pinned || panel.matches(':hover') || pet.matches(':hover');
+  }
+  function scheduleClose(){
+    clearTimeout(hoverOut);
+    hoverOut=setTimeout(function(){ if(!shouldStayOpen()) closePanel(); }, 500);
+  }
+
+  pet.addEventListener('pointerenter', function(){
+    if(dragging || dragSuppress) return;        // 拖动期间不弹面板
+    clearTimeout(hoverOut); hoverIn=setTimeout(openPanel,300);
+  });
+  pet.addEventListener('pointerleave', function(){ dragSuppress=false; clearTimeout(hoverIn); scheduleClose(); });
+  panel.addEventListener('pointerenter', function(){ clearTimeout(hoverOut); });
+  panel.addEventListener('pointerleave', function(){ scheduleClose(); });
+
+  // 拖拽：按住鼠标左键拖动才触发；拖动期间不弹面板，松手贴到最近的一侧
+  var dragging=false,dragSuppress=false,startX=0,startY=0,startTop=0,baseLeft=0,dx=0,dragMoved=false;
+  pet.addEventListener('pointerdown', function(e){
+    if(e.button!==0) return;                   // 只认左键
+    dragging=true; dragMoved=false; dragSuppress=true; dx=0;
+    clearTimeout(hoverIn); closePanel();
+    startX=e.clientX; startY=e.clientY;
+    startTop=parseFloat(pet.style.top)||0;
+    baseLeft=pet.getBoundingClientRect().left;
+    pet.classList.add('dragging');
+    pet.setPointerCapture(e.pointerId);
+  });
+  pet.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    dx=e.clientX-startX;
+    var dy=e.clientY-startY;
+    if(Math.abs(dx)>4||Math.abs(dy)>4) dragMoved=true;
+    var top=Math.max(0, Math.min(innerHeight-pet.offsetHeight, startTop+dy));
+    pet.style.top=top+'px';
+    pet.style.transform='translateX('+dx+'px)';
+  });
+  pet.addEventListener('pointerup', function(){
+    if(dragging){
+      var center=baseLeft+dx+pet.offsetWidth/2;
+      var side=center<innerWidth/2?'left':'right';
+      if(side!==SIDE){ SIDE=side; log('换到'+(side==='left'?'左侧':'右侧')); }
+      localStorage.setItem('petSide2', SIDE);
+      localStorage.setItem('petTop2', Math.round(parseFloat(pet.style.top)||0));
+      pet.style.transform='';
+      applySide();
+      pet.classList.remove('dragging');
+    }
+    dragging=false;
+    if(!dragMoved) dragSuppress=false;         // 只是点一下，不是拖，恢复悬停
+    setTimeout(function(){dragMoved=false;},50);
+  });
+
+  // 输入框按内容长高，超过四行再内部滚动
+  function autosize(){
+    ask.style.height='auto';
+    ask.style.height=Math.min(ask.scrollHeight,104)+'px';
+  }
+  ask.addEventListener('input', function(){ autosize(); positionFloating(); });
+  ask.addEventListener('focus', function(){ pinned=true; });
+  ask.addEventListener('blur', function(){ pinned=false; scheduleClose(); });
+
+  // 随手记：输入或失焦就存，切走前不留丢
+  var scratchIn=document.getElementById('scratchIn');
+  scratchIn.addEventListener('focus', function(){ pinned=true; });
+  scratchIn.addEventListener('blur', function(){ pinned=false; scratchSet(TASKS[task].id, scratchIn.value.trim()); scheduleClose(); });
+
+  // 没配置模型 key 时，AI 入口只读、占位文字指向设置页、发送键禁用
+  function renderAi(){
+    var send=document.getElementById('send');
+    if(!hasKey){
+      ask.readOnly=true; ask.value='';
+      ask.placeholder='请前往设置页配置 API key';
+      send.disabled=true;
+    } else {
+      ask.readOnly=false;
+      ask.placeholder='有什么我能帮助你的吗？';
+      send.disabled=false;
+    }
+    autosize(); positionFloating();
+  }
+  ask.addEventListener('click', function(){
+    if(!hasKey) log('AI 未启用','请前往设置页配置 key');
+  });
+
+  document.getElementById('send').addEventListener('click', function(){
+    if(!hasKey){ log('AI 未启用','请前往设置页配置 key'); return; }
+    var q=ask.value.trim();
+    if(!q) return;
+    var t=TASKS[task], id=t.id;
+    chats[id]=chats[id]||[];
+    chats[id].push({
+      q:q.replace(/[<>&]/g,''),
+      a:'先写一句结论，再用两句解释它为什么成立。答完留在这里，不会替换上面那一步。'
+    });
+    markAiUsed(id);                     // 执行中问过 AI，第 5 页的总结就有着落
+    ask.value=''; autosize(); ask.focus();
+    renderAnswers();
+    log('问 AI（'+id+'）', q.slice(0,12));
+    positionFloating();
+  });
+  // Enter 发送，Shift+Enter 换行；输入法上屏那一下不算
+  ask.addEventListener('keydown', function(e){
+    if(e.key==='Enter' && !e.shiftKey && !e.isComposing){
+      e.preventDefault();
+      document.getElementById('send').click();
+    }
+  });
+
+  /* ---------- 开始 / 计时 / 暂停 / 停止 / 跳过 ---------- */
+  var actionBox=document.getElementById('action');
+
+  function renderAction(){
+    var t=TASKS[task], s=timer(t.id);
+    if(s.done){
+      actionBox.innerHTML='<div class="donenote">这件事已标记为完成</div>';
+      return;
+    }
+    if(s.run){
+      var pauseIcon = s.paused
+        ? '<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M4 2.5l9 5.5-9 5.5z"/></svg>'
+        : '<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="4" y="2.5" width="3" height="11" rx="1"/><rect x="9" y="2.5" width="3" height="11" rx="1"/></svg>';
+      var stopIcon = '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg>';
+      actionBox.innerHTML=
+        '<div class="timerbar'+(s.paused?' paused':'')+'">'
+        +'<span class="clock" id="clock">'+fmt(elapsed(s))+'</span>'
+        +'<span class="acts"><button id="pause" aria-label="'+(s.paused?'继续':'暂停')+'">'+pauseIcon+'</button>'
+        +'<button id="stop" class="stop" aria-label="停止">'+stopIcon+'</button></span></div>';
+      document.getElementById('pause').addEventListener('click', function(){
+        var st=timer(t.id);
+        if(st.paused){ st.paused=false; st.from=Date.now(); log('继续计时',t.name); }
+        else { st.acc=elapsed(st); st.paused=true; log('暂停计时',t.name); }
+        renderAction();
+      });
+      document.getElementById('stop').addEventListener('click', function(){
+        var st=timer(t.id);
+        var ms=elapsed(st);
+        st.run=false; st.paused=false; st.acc=0; st.from=0;
+        log('evt_stop', t.name+' · '+fmt(ms));
+        renderAction();
+      });
+      return;
+    }
+    actionBox.innerHTML='<button class="go" id="start">开始</button>'
+      +'<div class="skip" id="skip">标记完成</div>';
+    document.getElementById('start').addEventListener('click', function(){
+      var st=timer(t.id);
+      st.run=true; st.paused=false; st.from=Date.now();
+      log('evt_start', t.name);
+      renderAction(); positionFloating();
+    });
+    document.getElementById('skip').addEventListener('click', function(){
+      var st=timer(t.id);
+      st.run=false; st.paused=false; st.acc=0; st.done=true;
+      log('evt_skip 标记完成', t.name);
+      renderAction(); positionFloating();
+    });
+  }
+
+  // 每 250 毫秒刷新当前可见的计时，切到别的任务时那边照跑
+  setInterval(function(){
+    var el=document.getElementById('clock');
+    if(!el) return;
+    var t=TASKS[task], s=timer(t.id);
+    if(s.run && !s.paused) el.textContent=fmt(elapsed(s));
+  }, 250);
+
+  document.querySelector('.hud').addEventListener('click', function(e){
+    var act=e.target.dataset.act; if(!act) return;
+    var btns=this.querySelectorAll('button');
+    if(act==='formA'||act==='formB'||act==='formC'){
+      for(var i=0;i<btns.length;i++){
+        var a=btns[i].dataset.act;
+        if(a==='formA'||a==='formB'||a==='formC') btns[i].classList.toggle('on', a===act);
+      }
+      setTask(act.slice(-1));
+      openPanel();
+    }
+    if(act==='mark'){
+      Object.keys(TASKS).forEach(function(k){ TASKS[k].marked=false; });
+      TASKS[task].marked=true;
+      setTask(task); openPanel(); log('标记为当前', TASKS[task].name);
+    }
+    if(act.indexOf('steps')===0){
+      var n=parseInt(act.replace('steps',''),10);
+      var t=TASKS[task];
+      if(t.form!=='A'){ log('独立事务没有流程轴','切回形态 A 再试'); return; }
+      t.total=n;
+      if(t.current>t.total) t.current=t.total;
+      for(var j=0;j<btns.length;j++){
+        if(btns[j].dataset.act && btns[j].dataset.act.indexOf('steps')===0)
+          btns[j].classList.toggle('on', btns[j].dataset.act===act);
+      }
+      buildTrack(t); openPanel(); log('步骤数', n);
+    }
+    if(act==='key'){
+      hasKey=!hasKey;
+      localStorage.setItem('aiKey', hasKey?'1':'0');
+      e.target.textContent = hasKey?'已配置 key':'未配置 key';
+      e.target.classList.toggle('on', hasKey);
+      renderAi();
+      log(hasKey?'已配置模型 key':'未配置模型 key','AI 入口'+(hasKey?'启用':'只读'));
+    }
+    if(act==='side'){
+      SIDE = SIDE==='right'?'left':'right';
+      localStorage.setItem('petSide2', SIDE);
+      applySide();
+      log('换到'+(SIDE==='left'?'左侧':'右侧'));
+    }
+    if(act==='none'){
+      noCurrent=!noCurrent;
+      e.target.textContent = noCurrent?'有当前事务':'无当前事务';
+      e.target.classList.toggle('on', noCurrent);
+      applyEmpty(); openPanel();
+      log(noCurrent?'没有当前事务':'有当前事务','面板'+(noCurrent?'只显示提示':'照常'));
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape'){ closePanel(); }
+  });
+  addEventListener('resize', positionFloating);
+
+  var hudToggle=document.getElementById('hudToggle');
+  if(hudToggle){
+    hudToggle.addEventListener('click', function(){
+      var collapsed=document.getElementById('hud').classList.toggle('collapsed');
+      hudToggle.textContent = collapsed?'演示控制':'收起演示';
+    });
+  }
+
+  var keyBtn=document.querySelector('.hud button[data-act="key"]');
+  if(keyBtn){ keyBtn.textContent = hasKey?'已配置 key':'未配置 key'; keyBtn.classList.toggle('on', hasKey); }
+
+  setTask('A');
+  applySide();
+  renderAi();
+})();
+</script>
+</body>
+</html>

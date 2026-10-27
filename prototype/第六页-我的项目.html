@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>第 6 页 · 我的项目</title>
+<style>
+  :root{
+    --bg1:#eef2f7; --bg2:#dfe6ef;
+    --ink:#1f2937; --ink2:#6b7686; --ink3:#9aa5b4;
+    --line:#e3e9f2; --line2:#c8d3e2;
+    --accent:#2563eb; --accent-soft:#eef3fe;
+    --track:#d8e0ec;
+    --glass:rgba(255,255,255,.94);
+    --f:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--f);color:var(--ink);overflow:hidden;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+
+  .win{position:absolute;left:90px;top:110px;width:min(720px,42vw);background:#fff;
+       border:1px solid var(--line2);border-radius:12px;box-shadow:0 14px 36px rgba(30,50,80,.14);overflow:hidden}
+  .win .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f6f8fb;border-bottom:1px solid var(--line)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .win .t{font-size:13px;color:var(--ink2);margin-left:6px}
+  .win .body{padding:26px 30px}
+  .win h1{font-size:18px;margin:0 0 16px;font-weight:600}
+  .rule{height:12px;border-radius:6px;background:#eff2f7;margin:11px 0}
+  .rule.s{width:60%}
+
+  .hud{position:fixed;left:22px;top:16px;z-index:40;display:flex;flex-direction:column;
+    align-items:flex-start;gap:8px;max-width:560px}
+  .hud button,.hud a{min-height:34px;display:inline-flex;align-items:center;padding:6px 11px;font-size:13px;
+    font-family:var(--f);color:var(--ink);text-decoration:none;background:rgba(255,255,255,.92);
+    border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .hud button:hover,.hud a:hover{background:#fff}
+  .hud button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hud .tag{font-size:12px;color:var(--ink2);padding:8px 4px}
+  .hud-panel{display:flex;flex-wrap:wrap;gap:8px;padding:8px;max-width:520px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line2);border-radius:10px}
+  .hud.collapsed .hud-panel{display:none}
+
+  .app{position:fixed;left:50%;top:50%;width:70vw;height:70vh;min-width:880px;min-height:560px;
+    z-index:28;display:flex;flex-direction:column;padding:16px 18px 18px;
+    background:#f2f6fc;border:1px solid var(--line2);border-radius:18px;
+    box-shadow:0 28px 70px rgba(30,50,80,.22);
+    transform:translate(calc(-50% + 110vw), -50%);opacity:0;pointer-events:none;
+    transition:transform .34s cubic-bezier(.2,.7,.2,1),opacity .2s ease}
+  .app.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+
+  .tabs{display:flex;gap:8px;align-items:center;padding-left:4px;margin-bottom:8px;position:relative;z-index:3}
+  .tab{min-height:38px;padding:0 20px;font-size:14px;font-family:var(--f);color:var(--ink2);
+    background:transparent;border:1px solid transparent;border-radius:12px;cursor:pointer;
+    transition:color .15s,background .15s,border-color .15s,box-shadow .15s}
+  .tab:hover{color:var(--ink)}
+  .tab.on{background:#fff;border-color:var(--line2);color:var(--ink);font-weight:600;
+    box-shadow:0 2px 8px rgba(30,50,80,.08)}
+
+  .sheet{position:relative;flex:1;min-height:0;background:#fff;border:1px solid var(--line2);
+    border-radius:14px;padding:22px 28px 26px;overflow:auto}
+  .page{display:none}
+  .page.on{display:block}
+
+  .ph{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .ph h2{margin:0;font-size:16px;font-weight:600}
+  .ph .sub{font-size:12px;color:var(--ink3);margin-top:4px}
+  .ph button{min-height:34px;padding:0 14px;font-size:13px;font-family:var(--f);color:var(--accent);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .ph button:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+  /* 新建项目 */
+  .pform{display:none;margin-bottom:12px;padding:14px 16px;background:#f7f9fd;
+    border:1px solid var(--line);border-radius:12px}
+  .pform.on{display:block}
+  .pform input[type=text]{width:100%;height:38px;padding:0 12px;font-size:14px;font-family:var(--f);
+    color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:10px;outline:none}
+  .pform input[type=text]:focus{border-color:var(--accent)}
+  .pform .err{display:none;font-size:12px;color:#d94a3d;margin-top:6px}
+  .pform .err.on{display:block}
+  .pform .row2{display:flex;gap:14px;margin-top:12px;font-size:13px;color:var(--ink2);flex-wrap:wrap;align-items:center}
+  .pform input[type=date]{height:32px;padding:0 8px;font-size:13px;font-family:var(--f);
+    color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:8px}
+  .pform .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .pform .foot button{height:34px;padding:0 14px;font-size:13px;font-family:var(--f);border-radius:10px;cursor:pointer}
+  .pform .ok{color:#fff;background:var(--accent);border:0}
+  .pform .ok:disabled{opacity:.45;cursor:not-allowed}
+  .pform .cancel{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+
+  /* 列表 */
+  .plist{display:flex;flex-direction:column}
+  .pcard{position:relative;display:block;margin-bottom:8px;padding:14px 18px;background:#fff;
+    border:1px solid var(--line);border-radius:12px;cursor:pointer;
+    transition:border-color .14s,box-shadow .14s}
+  .pcard:hover{border-color:#b9c8dd;box-shadow:0 6px 16px rgba(30,50,80,.07)}
+  .pc-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .pc-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-pct{font-size:13px;color:var(--accent);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .pc-bar{height:4px;border-radius:2px;background:#eef1f6;overflow:hidden;margin:9px 0 8px}
+  .pc-bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+  .pc-foot{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .pc-next{font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-next b{font-weight:600;color:var(--ink)}
+  .pc-when{font-size:12px;color:var(--ink3);flex:0 0 auto}
+  .pc-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#c3ccda;font-size:18px}
+
+  .pempty{display:none;padding:50px 0;text-align:center;color:var(--ink3);font-size:13px}
+  .pempty.on{display:block}
+  .pempty b{display:block;font-size:15px;color:var(--ink2);margin-bottom:12px;font-weight:600}
+  .pempty button{min-height:34px;padding:0 14px;font-size:13px;font-family:var(--f);color:var(--accent);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+
+  /* 展开态 */
+  .dhead{display:flex;align-items:center;gap:14px;padding:0 2px 10px}
+  .back{min-height:32px;padding:0 10px;font-size:13px;font-family:var(--f);color:var(--ink2);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .back:hover{color:var(--accent);border-color:var(--accent)}
+  .ttl{flex:1;min-width:0}
+  .ttl h1{margin:0;font-size:20px;font-weight:600;line-height:1.3}
+  .ttl .sub{font-size:12px;color:var(--ink3);margin-top:4px;font-variant-numeric:tabular-nums}
+  .titlerow{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .titlerow h1{flex:0 0 auto;max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dinfo{font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+  .dinfo:empty{display:none}
+  .del{flex:0 0 auto;height:32px;padding:0 12px;font-size:13px;font-family:var(--f);color:#d94a3d;
+    background:#fff;border:1px solid #f0c9c4;border-radius:10px;cursor:pointer}
+  .del:hover{background:#fdf3f2;border-color:#e3a49c}
+
+  /* 分段进度条（与第 2 页同一套） */
+  .barrow{display:flex;align-items:center;gap:12px;margin:2px 2px 6px}
+  .track{display:flex;gap:5px;flex:1}
+  .track i{flex:1;height:5px;border-radius:3px;background:var(--track);cursor:pointer;
+    transition:background .15s,filter .15s}
+  .track i.done{background:var(--accent)}
+  .track i:hover{filter:brightness(.94)}
+  .track i.sel{outline:2px solid var(--accent);outline-offset:2px}
+  .flowbtn{min-height:26px;padding:0 8px;font-size:12px;font-family:var(--f);color:var(--accent);
+    background:transparent;border:0;cursor:pointer;flex:0 0 auto}
+  .flowbtn:hover{text-decoration:underline}
+
+  .filtertip{display:none;align-items:center;gap:8px;font-size:12px;color:var(--accent);
+    background:var(--accent-soft);border:1px solid #cfdcfb;border-radius:8px;
+    padding:5px 10px;margin:8px 2px 2px;width:max-content}
+  .filtertip.on{display:flex}
+  .filtertip button{font-size:13px;line-height:1;color:var(--accent);background:transparent;border:0;cursor:pointer}
+
+  /* 流程编辑器 */
+  .flowedit{display:none;margin:10px 2px 4px;padding:12px 14px;background:#f7f9fd;
+    border:1px solid var(--line);border-radius:12px}
+  .flowedit.on{display:block}
+  .fe-step{display:block}
+  .fe-row{display:flex;align-items:center;gap:8px;padding:5px 0}
+  .fe-addrow{display:flex;align-items:center;gap:8px;padding:2px 0 8px 30px}
+  .fe-addrow input{flex:1;height:30px;padding:0 10px;font-size:13px;font-family:var(--f);color:var(--ink);
+    background:#fff;border:1px solid var(--line2);border-radius:8px;outline:none}
+  .fe-addrow input:focus{border-color:var(--accent)}
+  .fe-addrow button{height:28px;padding:0 10px;font-size:12px;font-family:var(--f);border-radius:8px;cursor:pointer}
+  .fe-addrow .fe-ok{color:#fff;background:var(--accent);border:0}
+  .fe-addrow .fe-ok:disabled{opacity:.45;cursor:not-allowed}
+  .fe-addrow .fe-cancel{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+  .fe-no{flex:0 0 22px;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
+  .fe-name{flex:1;height:32px;padding:0 10px;font-size:13px;font-family:var(--f);color:var(--ink);
+    background:#fff;border:1px solid var(--line2);border-radius:8px;outline:none}
+  .fe-name:focus{border-color:var(--accent)}
+  .fe-mini{height:28px;min-width:28px;padding:0 8px;font-size:12px;font-family:var(--f);color:var(--ink2);
+    background:#fff;border:1px solid var(--line2);border-radius:8px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+  .fe-mini:hover{color:var(--accent);border-color:var(--accent)}
+  .fe-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .fe-add{height:30px;padding:0 12px;font-size:12px;font-family:var(--f);color:var(--accent);
+    background:#fff;border:1px dashed var(--line2);border-radius:8px;cursor:pointer}
+  .fe-done{height:30px;padding:0 14px;font-size:12px;font-family:var(--f);color:#fff;
+    background:var(--accent);border:0;border-radius:8px;cursor:pointer}
+
+  /* AI 梳理块 */
+  .ai{margin:12px 2px 4px;background:#f7f9fd;border:1px solid var(--line);border-radius:12px}
+  .ai-head{display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 14px;
+    font-size:13px;font-weight:600;color:var(--ink);background:transparent;border:0;cursor:pointer;text-align:left}
+  .ai-head .hint{font-size:11px;font-weight:400;color:var(--ink3)}
+  .ai-body{display:none;padding:0 14px 12px;border-top:1px solid var(--line)}
+  .ai-body.on{display:block}
+  .ai-up{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 8px}
+  .ai-up button{height:30px;padding:0 12px;font-size:12px;font-family:var(--f);color:var(--ink2);
+    background:#fff;border:1px solid var(--line2);border-radius:8px;cursor:pointer}
+  .ai-up button:hover{color:var(--accent);border-color:var(--accent)}
+  .ai-up button:disabled{opacity:.45;cursor:not-allowed;color:var(--ink2);border-color:var(--line2)}
+  .ai-files{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .ai-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;font-size:11px;color:var(--ink2);
+    background:#fff;border:1px solid var(--line2);border-radius:8px}
+  .ai-chip button{padding:0;font-size:12px;line-height:1;color:var(--ink3);background:transparent;border:0;cursor:pointer}
+  .ai-log{max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}
+  .msg{max-width:86%;padding:9px 12px;font-size:13px;line-height:1.65;border-radius:10px}
+  .msg.me{align-self:flex-end;background:var(--accent);color:#fff}
+  .msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line)}
+  .msg ol{margin:6px 0 6px 18px;padding:0}
+  .msg li{margin:2px 0}
+  .msg .apply{margin-top:8px;height:28px;padding:0 10px;font-size:12px;font-family:var(--f);
+    color:var(--accent);background:var(--accent-soft);border:1px solid #cfdcfb;border-radius:8px;cursor:pointer}
+  .ai-input{display:flex;gap:8px}
+  .ai-input input{flex:1;height:34px;padding:0 12px;font-size:13px;font-family:var(--f);color:var(--ink);
+    background:#fff;border:1px solid var(--line2);border-radius:8px;outline:none}
+  .ai-input input:focus{border-color:var(--accent)}
+  .ai-input button{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
+    color:#fff;background:var(--accent);border:0;border-radius:8px;cursor:pointer}
+  .ai-input button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* 待办：沿用独立事项那套 */
+  .sec{margin-bottom:26px}
+  .sec:last-child{margin-bottom:0}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .sec-h h3{margin:0;font-size:13px;font-weight:600;color:var(--ink2)}
+  .sec-h .count{font-size:12px;color:var(--ink3)}
+  .link{min-height:26px;padding:0 8px;font-size:12px;font-family:var(--f);color:var(--accent);
+    background:transparent;border:0;cursor:pointer}
+  .link:hover{text-decoration:underline}
+
+  .tlist{display:flex;flex-direction:column}
+  .ti{display:flex;align-items:center;gap:14px;min-height:72px;padding:0 16px;margin-bottom:8px;
+    background:#fff;border:1px solid var(--line);border-radius:12px;transition:background .14s,border-color .14s}
+  .ti:hover{border-color:#c6d3e4}
+  .ti.running{border-color:#f0dca8}
+  .ti.flash{background:var(--accent-soft);border-color:#cfdcfb}
+  .ti.done{background:#fafbfe}
+  .ti-check{flex:0 0 auto;width:18px;height:18px;padding:0;display:flex;align-items:center;justify-content:center;
+    background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer;
+    transition:background .14s,border-color .14s}
+  .ti.running .ti-check{background:#fef3c7;border-color:#f0b429}
+  .ti.done .ti-check{background:var(--accent);border-color:var(--accent)}
+  .ti-body{flex:0 0 42%;min-width:0;max-width:42%;padding:13px 0}
+  .ti-name{font-size:15px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ti.done .ti-name{text-decoration:line-through;color:var(--ink3)}
+  .ti-meta{font-size:12px;color:var(--ink3);margin-top:3px;font-variant-numeric:tabular-nums}
+  .ti-notewrap{display:flex;align-items:center;gap:6px;margin-top:5px}
+  .ti-note{flex:1;min-width:0;height:24px;padding:0 8px;font-size:12px;font-family:var(--f);
+    color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:6px;outline:none}
+  .ti-notetip{flex:0 0 auto;font-size:11px;color:var(--ink3)}
+  .ti-note:focus{border-color:var(--accent)}
+  .ti-desc{flex:1;min-width:0;margin-left:20px;align-self:center;font-size:13px;color:var(--ink2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ti.done .ti-desc{color:var(--ink3)}
+  .src{display:inline-block;margin-left:8px;padding:1px 6px;font-size:11px;font-weight:400;color:var(--accent);
+    background:var(--accent-soft);border:1px solid #cfdcfb;border-radius:6px;vertical-align:2px}
+  .ti-go{flex:0 0 auto;min-width:88px;height:32px;padding:0 14px;font-size:13px;font-family:var(--f);
+    color:var(--accent);background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .ti-go:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .ti-assign{margin-left:8px;padding:0;font-size:11px;font-family:var(--f);color:var(--accent);
+    background:transparent;border:0;cursor:pointer}
+  .ti-move{display:flex;gap:4px;flex:0 0 auto;margin-right:6px}
+  .ti-move button{width:24px;height:24px;padding:0;font-size:12px;line-height:1;color:var(--ink3);
+    background:#fff;border:1px solid var(--line2);border-radius:6px;cursor:pointer}
+  .ti-move button:hover{color:var(--accent);border-color:var(--accent)}
+  .ti-assign:hover{text-decoration:underline}
+  .ti-stepsel{display:flex;align-items:center;gap:8px;padding:0 16px 10px;margin:-8px 0 8px}
+  .ti-stepsel select{height:30px;padding:0 8px;font-size:12px;font-family:var(--f);color:var(--ink2);
+    background:#fff;border:1px solid var(--line2);border-radius:8px;outline:none}
+  .ti-stepsel button{height:28px;padding:0 10px;font-size:12px;font-family:var(--f);color:var(--ink2);
+    background:#fff;border:1px solid var(--line2);border-radius:8px;cursor:pointer}
+  .ti-clock{flex:0 0 auto;min-width:88px;height:32px;padding:0 10px;font-size:13px;font-family:var(--f);
+    font-variant-numeric:tabular-nums;color:#fff;background:var(--accent);border:0;border-radius:10px;cursor:pointer}
+
+  /* 进度史 */
+  .hlist{display:flex;flex-direction:column}
+  .h{display:flex;gap:14px;padding:14px 2px;border-bottom:1px solid var(--line)}
+  .h:last-child{border-bottom:0}
+  .h-when{flex:0 0 88px;font-size:12px;color:var(--ink3);padding-top:2px;font-variant-numeric:tabular-nums}
+  .h-body{flex:1;min-width:0}
+  .h-text{font-size:14px;line-height:1.6}
+  .h-meta{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+  .tag2{padding:1px 7px;font-size:11px;color:var(--ink2);background:#f4f7fc;
+    border:1px solid var(--line);border-radius:6px}
+  .rev{font-size:11px;color:var(--accent);background:transparent;border:0;cursor:pointer;padding:0}
+  .h-editbtn{font-size:11px;color:var(--accent);background:transparent;border:0;cursor:pointer;padding:0}
+  .h-notebox{margin-top:6px}
+  .h-noterow{display:flex;align-items:center;gap:8px}
+  .h-notetext{flex:1;min-width:0;font-size:12px;line-height:1.6;color:var(--ink2)}
+  .h-notetext.empty{color:var(--ink3)}
+  .h-notebtn{font-size:11px;color:var(--accent);background:transparent;border:0;cursor:pointer;padding:0;flex:0 0 auto}
+  .h-notebtn:hover{text-decoration:underline}
+  .h-noteedit{width:100%;min-height:48px;padding:6px 8px;font-size:12px;line-height:1.6;font-family:var(--f);
+    color:var(--ink);background:#fff;border:1px solid var(--accent);border-radius:8px;outline:none;resize:vertical}
+  .h-notebar{display:flex;gap:8px;margin-top:6px}
+  .h-notebar button{height:26px;padding:0 10px;font-size:12px;font-family:var(--f);border-radius:8px;cursor:pointer}
+  .h-notesave{color:#fff;background:var(--accent);border:0}
+  .h-notecancel{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+  .h-editbtn:hover{text-decoration:underline}
+  .h-edit{margin-top:2px}
+  .h-edit-in{width:100%;min-height:62px;padding:8px 10px;font-size:13px;line-height:1.6;font-family:var(--f);
+    color:var(--ink);background:#fff;border:1px solid var(--accent);border-radius:8px;outline:none;resize:vertical}
+  .h-edit-acts{display:flex;gap:8px;margin-top:6px}
+  .h-edit-acts button{height:28px;padding:0 10px;font-size:12px;font-family:var(--f);border-radius:8px;cursor:pointer}
+  .h-save{color:#fff;background:var(--accent);border:0}
+  .h-cancel{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+  .rev:hover{text-decoration:underline}
+  .revbox{display:none;margin-top:8px;padding:9px 11px;font-size:12px;color:var(--ink2);
+    background:#f8fafd;border:1px solid var(--line);border-radius:8px;line-height:1.7}
+  .revbox.on{display:block}
+  .revbox b{font-weight:600;color:var(--ink)}
+
+  .tline{position:relative;padding-left:22px}
+  .tline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:#e6ecf5;border-radius:1px}
+  .tl-day{font-size:12px;color:var(--ink3);margin:16px 0 6px}
+  .tl-day:first-child{margin-top:0}
+  .tl{position:relative;padding:8px 0}
+  .tl::before{content:"";position:absolute;left:-21px;top:14px;width:10px;height:10px;border-radius:50%;
+    background:#fff;border:2px solid var(--accent)}
+  .tl-text{font-size:13px;line-height:1.6}
+  .tl-when{font-size:12px;color:var(--ink3);margin-top:3px}
+
+  .empty{display:none;padding:36px 0;text-align:center;color:var(--ink3);font-size:13px}
+  .empty.on{display:block}
+  .empty b{display:block;font-size:15px;color:var(--ink2);margin-bottom:12px;font-weight:600}
+  .empty button{min-height:34px;padding:0 14px;font-size:13px;font-family:var(--f);color:var(--accent);
+    background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+
+  .todo{padding:40px 0;text-align:center;color:var(--ink3);font-size:13px}
+
+  /* 桌宠与计时面板 */
+  .pet{display:none;position:fixed;right:0;bottom:8%;z-index:30;cursor:pointer;user-select:none;
+    width:20vw;height:20vh;align-items:flex-end;justify-content:flex-end}
+  .pet.on{display:flex}
+  .pet img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;
+    animation:breathe 4.2s ease-in-out infinite;transform-origin:bottom center}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+
+  .panel{position:fixed;z-index:32;width:30vw;max-height:40vh;overflow-y:auto;padding:16px;
+    background:var(--glass);border:1px solid var(--line2);border-radius:10px;
+    box-shadow:0 12px 32px rgba(30,50,80,.16);backdrop-filter:blur(14px);
+    opacity:0;transform:translateX(8px);pointer-events:none;transition:opacity .16s,transform .16s}
+  .panel.on{opacity:1;transform:none;pointer-events:auto}
+  .pname{font-size:15px;font-weight:600}
+  .pmode{font-size:12px;color:var(--ink3);margin-top:4px}
+  .ptrack{display:flex;gap:5px;margin:12px 0 10px}
+  .ptrack i{flex:1;height:5px;border-radius:3px;background:#dbe3ef}
+  .ptrack i.done{background:var(--accent)}
+  .step{font-size:14px;line-height:1.6;margin:0 0 4px}
+  .pmeta{font-size:12px;color:var(--ink2);margin-bottom:10px}
+  .timerbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+  .clock{font-size:21px;line-height:1;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+  .timerbar .acts{display:flex;gap:8px}
+  .timerbar button{display:flex;align-items:center;justify-content:center;width:44px;min-height:38px;padding:0;
+    color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:10px;cursor:pointer}
+  .timerbar button:hover{border-color:var(--accent);color:var(--accent)}
+  .timerbar button.stop{background:#d94a3d;border-color:#d94a3d;color:#fff}
+  .timerbar button.stop:hover{background:#c8402f;border-color:#c8402f;color:#fff}
+  .timerbar.paused .clock{color:var(--ink2)}
+  .pdone{margin-top:10px;text-align:center;font-size:12px;color:var(--ink2);cursor:pointer}
+  .pdone:hover{color:var(--accent)}
+
+  /* 删除确认弹窗 */
+  .modal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+    background:rgba(24,36,54,.28)}
+  .modal.on{display:flex}
+  .mbox{width:360px;padding:20px 22px;background:#fff;border:1px solid var(--line2);border-radius:14px;
+    box-shadow:0 24px 60px rgba(20,35,60,.28)}
+  .mbox h3{margin:0 0 8px;font-size:16px;font-weight:600;line-height:1.5}
+  .mbox p{margin:0 0 18px;font-size:13px;line-height:1.7;color:var(--ink2)}
+  .mfoot{display:flex;justify-content:flex-end;gap:8px}
+  .mfoot button{height:34px;padding:0 14px;font-size:13px;font-family:var(--f);border-radius:10px;cursor:pointer}
+  .mcancel{color:var(--ink2);background:#fff;border:1px solid var(--line2)}
+  .mok{color:#fff;background:#d94a3d;border:0}
+  .mok:hover{background:#c8402f}
+
+  .console{position:fixed;left:22px;bottom:16px;width:380px;max-height:140px;overflow:auto;z-index:41;
+    padding:10px 12px;font-size:12px;line-height:1.7;color:#3c4657;background:rgba(255,255,255,.88);
+    border:1px solid var(--line2);border-radius:10px}
+  .console b{font-weight:600;color:var(--ink)}
+  .console div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="bar">
+    <span class="dot" style="background:#ff5f57"></span>
+    <span class="dot" style="background:#febc2e"></span>
+    <span class="dot" style="background:#28c840"></span>
+    <span class="t">thesis.docx — 第三章</span>
+  </div>
+  <div class="body">
+    <h1>第三章 结论</h1>
+    <div class="rule"></div><div class="rule s"></div><div class="rule"></div><div class="rule s"></div>
+  </div>
+</div>
+
+<div class="hud collapsed" id="hud">
+  <button class="hud-toggle" id="hudToggle">演示控制</button>
+  <div class="hud-panel">
+    <span class="tag">第 6 页</span>
+    <button data-act="form">新建项目</button>
+    <button data-act="aikey">切换 key 状态</button>
+    <button data-act="move">模拟移入</button>
+    <button data-act="clearmove">清空移入记录</button>
+    <button data-act="emptyprojects">清空项目看空态</button>
+    <button data-act="emptyhist">清空进度史</button>
+    <button data-act="reset">重置演示数据</button>
+    <a href="第一页-桌面常驻态.html">第 1 页</a>
+    <a href="第二页-悬停小面板.html">第 2 页</a>
+    <a href="第三页-主界面.html">第 3 页</a>
+    <a href="第四页-独立事项.html">第 4 页</a>
+  </div>
+</div>
+
+<div class="app on" id="app">
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-tab="solo">独立事项</button>
+    <button class="tab on" data-tab="projects">我的项目</button>
+    <button class="tab" data-tab="records">我的记录</button>
+    <button class="tab" data-tab="ideas">想法盒</button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <section class="sheet" id="sheet">
+    <div class="page on" id="page-projects">
+
+      <!-- 列表态 -->
+      <div id="listView">
+        <div class="ph">
+          <div>
+            <h2>我的项目</h2>
+            <div class="sub" id="pcount">3 个项目</div>
+          </div>
+          <button id="newBtn">新建项目</button>
+        </div>
+
+        <div class="pform" id="pform">
+          <input type="text" id="pName" placeholder="项目名" maxlength="30">
+          <div class="err" id="pErr">已有同名项目</div>
+          <input type="text" id="pDesc" placeholder="一句话说明（选填）" maxlength="40" style="margin-top:8px">
+          <div class="row2">
+            <label>截止日期 <input type="date" id="pDue"></label>
+          </div>
+          <div class="foot">
+            <button class="cancel" id="pCancel">取消</button>
+            <button class="ok" id="pOk" disabled>确定</button>
+          </div>
+        </div>
+
+        <div class="plist" id="plist"></div>
+        <div class="pempty" id="pempty">
+          <b>还没有项目</b>
+          <button id="pemptyNew">新建项目</button>
+        </div>
+      </div>
+
+      <!-- 展开态 -->
+      <div id="detailView" style="display:none">
+        <div class="dhead">
+          <button class="back" id="back">← 全部项目</button>
+          <div class="ttl">
+            <div class="titlerow">
+              <h1 id="pname">毕业论文</h1>
+              <span class="dinfo" id="pdesc"></span>
+              <span class="dinfo" id="pdue"></span>
+            </div>
+            <div class="sub" id="psub"></div>
+          </div>
+          <button class="del" id="delBtn">删除项目</button>
+        </div>
+
+        <div class="barrow">
+          <div class="track" id="track"></div>
+          <button class="flowbtn" id="flowBtn">编辑流程</button>
+        </div>
+        <div class="filtertip" id="filterTip">
+          <span id="filterText">第 3 步 · 写结论</span>
+          <button id="filterClear" aria-label="清除筛选">×</button>
+        </div>
+
+        <div class="flowedit" id="flowEdit">
+          <div id="feList"></div>
+          <div class="fe-foot">
+            <button class="fe-add" id="feAdd">＋ 加一步</button>
+            <button class="fe-done" id="feDone">完成</button>
+          </div>
+        </div>
+
+        <div class="ai" id="aiBox">
+          <button class="ai-head" id="aiHead">
+            <span>AI 帮助</span>
+            <span class="hint" id="aiHint">展开</span>
+          </button>
+          <div class="ai-body" id="aiBody">
+            <div class="ai-up">
+              <button id="pickFile">选文件</button>
+              <button id="pickImg">选图片</button>
+              <input type="file" id="fileInput" hidden>
+              <input type="file" id="imgInput" accept="image/*" hidden>
+            </div>
+            <div class="ai-files" id="aiFiles"></div>
+            <div class="ai-log" id="aiLog"></div>
+            <div class="ai-input">
+              <input type="text" id="aiText" placeholder="可以用我拆解步骤、确定每步做什么">
+              <button id="aiSend" aria-label="发送">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21.5 2.5 10.8 21.3l-2.4-7.1-6.9-2.4z"></path>
+                  <path d="M21.5 2.5 8.4 14.2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="tlist" id="tlist"></div>
+        </div>
+
+        <div class="sec" id="movedSec" style="display:none">
+          <div class="sec-h">
+            <h3>从独立事项移入</h3>
+            <span class="count" id="movedCount"></span>
+          </div>
+          <div class="tlist" id="movedList"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-h">
+            <h3 id="histTitle">进度史</h3>
+            <button class="link" id="viewBtn">时间轴</button>
+          </div>
+          <div class="hlist" id="history"></div>
+          <div class="tline" id="timeline" style="display:none"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="page" id="page-todo">
+      <div class="todo">这一页在后面几轮做，先看「我的项目」。</div>
+    </div>
+  </section>
+</div>
+
+<div class="pet" id="pet">
+  <img src="../assets/桌宠/常驻右-240.png" alt="桌宠">
+</div>
+
+<aside class="panel" id="panel">
+  <div class="pname" id="pn">写第三章结论</div>
+  <div class="pmode" id="pmode">毕业论文 · 第 3 步 / 共 7 步</div>
+  <div class="ptrack" id="ptrack"></div>
+  <p class="step" id="step">把三点并成一段结论</p>
+  <div class="pmeta" id="pmeta">约 5 分钟</div>
+  <div class="timerbar" id="timerbar">
+    <span class="clock" id="clock">00:00</span>
+    <span class="acts">
+      <button id="pause" aria-label="暂停">
+        <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
+          <rect x="4" y="2.5" width="3" height="11" rx="1"></rect>
+          <rect x="9" y="2.5" width="3" height="11" rx="1"></rect>
+        </svg>
+      </button>
+      <button id="stop" class="stop" aria-label="停止">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+          <rect x="3" y="3" width="10" height="10" rx="1.5"></rect>
+        </svg>
+      </button>
+    </span>
+  </div>
+  <div class="pdone" id="pdone">标记完成</div>
+</aside>
+
+<div class="modal" id="delModal">
+  <div class="mbox">
+    <h3 id="delTitle">删除这个项目？</h3>
+    <p>项目所有数据将被一并删除。</p>
+    <div class="mfoot">
+      <button class="mcancel" id="delCancel">取消</button>
+      <button class="mok" id="delOk">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="console" id="log"><div><b>事件</b>：我的项目已打开</div></div>
+
+<script>
+(function(){
+  var app=document.getElementById('app'), pet=document.getElementById('pet'),
+      panel=document.getElementById('panel'), logBox=document.getElementById('log');
+
+  function log(n,x){
+    var d=document.createElement('div');
+    d.innerHTML='<b>'+n+'</b>'+(x?' · '+x:'');
+    logBox.appendChild(d); logBox.scrollTop=logBox.scrollHeight;
+  }
+
+  /* ---------- 数据：每个项目带自己的步骤 ---------- */
+  var PROJECTS={
+    '毕业论文':{
+      desc:'第三章收尾', last:'昨天', cur:3,
+      steps:['读文献','写提纲','写结论','对图表','通读一遍','排版','交给导师'],
+      todos:[
+        {id:'g1', name:'写第三章结论', desc:'把三点并成一段', stepIdx:2, min:5, spent:0},
+        {id:'g2', name:'对图表编号', desc:'正文与附录各一套', stepIdx:3, min:10, spent:25*60},
+        {id:'g3', name:'把初稿发给导师', desc:'', stepIdx:6, min:15, spent:0}
+      ],
+      history:[
+        {when:'昨天 21:40', text:'把第二章的三处引用补全，顺手改了摘要第一句', step:2, type:'写', revs:'21:35 初版 → 21:40 把"修改"改成"补全"'},
+        {when:'昨天 20:05', text:'读完三篇参考文献，记下两条能用进结论的论据', step:2, type:'查'},
+        {when:'周一 15:20', text:'重排第三章大纲，原来五节并成三节', step:1, type:'改'},
+        {when:'周一 09:30', text:'把开题报告的结论段挪进来当骨架', step:1, type:'写'}
+      ]
+    },
+    '求职':{
+      desc:'投递与面试', last:'3 天前', cur:3,
+      steps:['投递','等回复','面试准备','面试','复盘'],
+      todos:[
+        {id:'j1', name:'回面试邮件', desc:'和 HR 约周四下午', stepIdx:3, min:5, spent:0},
+        {id:'j2', name:'把作品集压到十页', desc:'只留三个项目', stepIdx:3, min:20, spent:0}
+      ],
+      history:[
+        {when:'3 天前', text:'投了三家，记下各自的时间线', step:0, type:'查'},
+        {when:'上周五', text:'简历改成两页，删掉两段社团经历', step:1, type:'改'}
+      ]
+    },
+    '配音练习':{
+      desc:'每天十分钟', last:'前天', cur:1,
+      steps:['开嗓','气息','绕口令','试读','录制','回听','定稿'],
+      todos:[
+        {id:'v1', name:'录一段 60 秒开场白', desc:'用手机录就行', stepIdx:4, min:15, spent:12*60},
+        {id:'v2', name:'练十分钟气息', desc:'', stepIdx:1, min:10, spent:0}
+      ],
+      history:[
+        {when:'前天', text:'把开场白写成三句，念了两遍', step:0, type:'写'}
+      ]
+    }
+  };
+  var order=['毕业论文','求职','配音练习'];
+  var current='毕业论文', view='list', axis='history', editRef=null;
+  var filterStep=null, flowOpen=false, aiOpen=false;
+  var TIMER={}, openId=null, MOVED_SPENT={}, PENDING_DONE={};
+
+  function scratchGet(id){
+    try{ return (JSON.parse(localStorage.getItem('scratchNotes')||'{}'))[id]||''; }catch(e){ return ''; }
+  }
+  function scratchSet(id, v){
+    var o={}; try{ o=JSON.parse(localStorage.getItem('scratchNotes')||'{}'); }catch(e){ o={}; }
+    if(v) o[id]=v; else delete o[id];
+    localStorage.setItem('scratchNotes', JSON.stringify(o));
+  }
+
+  function P(name){ return PROJECTS[name]; }
+  function pctOf(name){
+    var p=P(name);
+    if(!p || !p.steps.length) return 0;
+    return Math.round(p.cur/p.steps.length*100);
+  }
+
+  /* ---------- 从第 4 页移入 ---------- */
+  function readMoved(){
+    try{ return JSON.parse(localStorage.getItem('movedToProject')||'[]'); }
+    catch(e){ return []; }
+  }
+  function writeMoved(list){ localStorage.setItem('movedToProject', JSON.stringify(list)); }
+  function movedFor(project){
+    return readMoved().filter(function(m){ return m.project===project; }).map(function(m,i){
+      // id 与写入端一致：mv-项目-时间戳，随手记才能对上
+      return {id:'mv-'+project+'-'+(m.at||i), name:m.name, desc:m.desc||'',
+              stepIdx:(typeof m.stepIdx==='number'? m.stepIdx : -1),
+              min:0, spent:0, moved:true, at:m.at};
+    });
+  }
+  function todosOf(name){
+    var p=P(name); if(!p) return [];
+    return p.todos.slice().concat(movedFor(name).sort(function(a,b){ return b.at-a.at; }));
+  }
+  function findTodo(id){
+    var list=todosOf(current);
+    for(var i=0;i<list.length;i++) if(list[i].id===id) return list[i];
+    return null;
+  }
+
+  /* ---------- 计时 ---------- */
+  function timer(id){
+    TIMER[id]=TIMER[id]||{run:false,paused:false,acc:0,from:0};
+    return TIMER[id];
+  }
+  function elapsed(s){ return s.acc + (s.run && !s.paused ? Date.now()-s.from : 0); }
+  function fmt(ms){
+    var t=Math.floor(ms/1000);
+    return ('0'+Math.floor(t/60)).slice(-2)+':'+('0'+(t%60)).slice(-2);
+  }
+  function mins(sec){ return Math.max(1, Math.round(sec/60)); }
+
+  /* ---------- 列表 ---------- */
+  function renderList(){
+    var box=document.getElementById('plist'), empty=document.getElementById('pempty');
+    box.innerHTML='';
+    document.getElementById('pcount').textContent=order.length+' 个项目';
+
+    order.forEach(function(name){
+      var p=P(name); if(!p) return;
+      var next=p.todos.length ? p.todos[0].name : '';   // 没有待办就留空，不写提示
+      var el=document.createElement('div');
+      el.className='pcard'; el.dataset.name=name;
+      el.innerHTML='<div class="pc-top"><span class="pc-name"></span><span class="pc-pct"></span></div>'
+        +'<div class="pc-bar"><i></i></div>'
+        +'<div class="pc-foot"><span class="pc-next"></span><span class="pc-when"></span></div>'
+        +'<span class="pc-arrow">›</span>';
+      el.querySelector('.pc-name').textContent=name;
+      el.querySelector('.pc-pct').textContent=pctOf(name)+'%';
+      el.querySelector('.pc-bar i').style.width=pctOf(name)+'%';
+      var nextEl=el.querySelector('.pc-next');
+      if(next){
+        nextEl.innerHTML='下一步：<b></b>';
+        nextEl.querySelector('b').textContent=next;
+      } else {
+        nextEl.innerHTML='&nbsp;';        // 占位保住行高，但不显示文字
+      }
+      el.querySelector('.pc-when').textContent='最近推进：'+p.last;
+      el.addEventListener('click', function(){ openProject(name); });
+      box.appendChild(el);
+    });
+
+    var none=order.length===0;
+    box.style.display = none?'none':'flex';
+    empty.classList.toggle('on', none);
+  }
+
+  /* ---------- 展开态 ---------- */
+  function openProject(name){
+    current=name; view='detail'; flowOpen=false; aiOpen=false; editRef=null;
+    var p0=P(name);
+    // 默认只看当前正在推进的那一步
+    filterStep = (p0 && p0.steps.length) ? Math.min(p0.cur, p0.steps.length-1) : null;
+    document.getElementById('pform').classList.remove('on');
+    document.getElementById('flowEdit').classList.remove('on');
+    document.getElementById('aiBody').classList.remove('on');
+    document.getElementById('aiHint').textContent='展开';
+    render();          // 交给 render 切容器显隐，再让它去填详情
+    document.getElementById('sheet').scrollTop=0;
+    log('展开项目', name);
+  }
+
+  function fmtDue(d){
+    if(!d) return '';
+    var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    if(!m) return '';
+    return '截止 '+Number(m[2])+' 月 '+Number(m[3])+' 日';
+  }
+
+  function renderDetail(){
+    var p=P(current); if(!p) return;
+    document.getElementById('pname').textContent=current;
+    document.getElementById('pdesc').textContent=p.desc||'';
+    document.getElementById('pdue').textContent=fmtDue(p.due);
+    document.getElementById('psub').textContent=
+      pctOf(current)+'% · 已完成 '+p.cur+'/'+p.steps.length+' 步 · 最近推进 '+p.last;
+    renderTrack(); renderFilterTip(); renderTodos(); renderHistory(); renderFlowEdit();
+  }
+
+  /* 分段进度条 */
+  function renderTrack(){
+    var p=P(current), box=document.getElementById('track');
+    box.innerHTML='';
+    p.steps.forEach(function(name,i){
+      var seg=document.createElement('i');
+      if(i<p.cur) seg.className='done';
+      if(filterStep===i) seg.classList.add('sel');
+      seg.title=('第 '+(i+1)+' 步 · '+(name||'未命名步骤'));
+      seg.addEventListener('click', function(){ toggleFilter(i); });
+      box.appendChild(seg);
+    });
+  }
+
+  function toggleFilter(i){
+    filterStep = (filterStep===i) ? null : i;
+    renderTrack(); renderFilterTip(); renderTodos();
+    log(filterStep===null?'取消筛选':'按步骤筛选','第 '+(i+1)+' 步');
+  }
+
+  function renderFilterTip(){
+    var tip=document.getElementById('filterTip');
+    if(filterStep===null){ tip.classList.remove('on'); return; }
+    var name=P(current).steps[filterStep]||'未命名步骤';
+    document.getElementById('filterText').textContent='第 '+(filterStep+1)+' 步 · '+name;
+    tip.classList.add('on');
+  }
+  document.getElementById('filterClear').addEventListener('click', function(){
+    filterStep=null; renderTrack(); renderFilterTip(); renderTodos();
+  });
+
+  /* 待办：独立事项那套 */
+  function stepLabel(t){
+    if(t.stepIdx<0) return '未分配步骤';
+    var p=P(current);
+    return '第 '+(t.stepIdx+1)+' 步'+(p.steps[t.stepIdx]?' · '+p.steps[t.stepIdx]:'');
+  }
+
+  // 未分配步骤的事务可以归到任一步；移入的写回 localStorage，项目内事务直接改字段
+  function openStepPicker(afterEl, t){
+    var old=document.querySelector('.ti-stepsel');
+    if(old) old.remove();
+
+    var row=document.createElement('div'); row.className='ti-stepsel';
+    var sel=document.createElement('select');
+    var ph=document.createElement('option'); ph.value=''; ph.textContent='归到步骤';
+    ph.disabled=true; ph.selected=true; sel.appendChild(ph);
+    P(current).steps.forEach(function(name,i){
+      var o=document.createElement('option'); o.value=i;
+      o.textContent='第 '+(i+1)+' 步 · '+(name||'未命名步骤'); sel.appendChild(o);
+    });
+    var keep=document.createElement('option'); keep.value='-1'; keep.textContent='保持未分配'; sel.appendChild(keep);
+
+    var cancel=document.createElement('button'); cancel.type='button'; cancel.textContent='取消';
+
+    sel.addEventListener('change', function(){
+      var idx=parseInt(sel.value,10);
+      if(isNaN(idx) || idx<0){ row.remove(); return; }
+      assignStep(t, idx);
+      row.remove();
+    });
+    cancel.addEventListener('click', function(){ row.remove(); });
+
+    row.appendChild(sel); row.appendChild(cancel);
+    afterEl.insertAdjacentElement('afterend', row);
+    sel.focus();
+  }
+
+  function assignStep(t, idx){
+    var p=P(current);
+    if(t.moved && t.at!=null){
+      var all=readMoved();
+      all.forEach(function(m){ if(m.project===current && m.at===t.at) m.stepIdx=idx; });
+      writeMoved(all);
+    } else {
+      t.stepIdx=idx;
+    }
+    filterStep=idx;
+    renderTrack(); renderFilterTip(); renderTodos();
+    log('归到步骤', '第 '+(idx+1)+' 步'+(p.steps[idx]?' · '+p.steps[idx]:''));
+  }
+
+  function renderTodos(){
+    var all=todosOf(current);
+    // 未归位的单独成块，这里只列已挂到步骤上的
+    var list = all.filter(function(t){
+      return t.stepIdx>=0 && (filterStep===null || t.stepIdx===filterStep);
+    });
+    var box=document.getElementById('tlist');
+    box.innerHTML='';
+
+    list.forEach(function(t){
+      var s=timer(t.id);
+      var totalSpent = t.spent + (t.moved ? (MOVED_SPENT[t.id]||0) : 0);
+
+      var isDone = t.done || PENDING_DONE[t.id];
+      var el=document.createElement('div');
+      el.className='ti'+(s.run?' running':'')+(isDone?' done':'');
+      el.dataset.id=t.id;
+
+      var chk=document.createElement('button');
+      chk.type='button'; chk.className='ti-check';
+      chk.setAttribute('aria-label', isDone?'已完成':'标记完成');
+      if(isDone) chk.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5.5 5.5L20 6.5"></path></svg>';
+      chk.addEventListener('click', function(e){ e.stopPropagation(); finishTodo(t.id); });
+
+      var body=document.createElement('div'); body.className='ti-body';
+      var name=document.createElement('div'); name.className='ti-name'; name.textContent=t.name;
+      if(t.moved){
+        var src=document.createElement('span'); src.className='src';
+        src.textContent='从独立事项移入 · '+(t.at?new Date(t.at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'}):'今天');
+        name.appendChild(src);
+      }
+      body.appendChild(name);
+      var meta=document.createElement('div'); meta.className='ti-meta';
+      var mtext=document.createElement('span');
+      mtext.textContent = stepLabel(t) + (totalSpent>0 ? ' · 已做 '+mins(totalSpent)+' 分钟' : '');
+      meta.appendChild(mtext);
+      if(t.stepIdx<0){
+        var assign=document.createElement('button');
+        assign.type='button'; assign.className='ti-assign'; assign.textContent='归到步骤';
+        assign.addEventListener('click', function(e){ e.stopPropagation(); openStepPicker(el, t); });
+        meta.appendChild(assign);
+      }
+      body.appendChild(meta);
+
+      var noteWrap=document.createElement('div'); noteWrap.className='ti-notewrap';
+      var note=document.createElement('input');
+      note.type='text'; note.className='ti-note'; note.placeholder='随手记：这一步的成果';
+      note.value=scratchGet(t.id);
+      var noteTip=document.createElement('span'); noteTip.className='ti-notetip';
+      noteTip.textContent = note.value ? '已记' : '还没记';
+      var noteTimer=null;
+      function saveNote(){
+        clearTimeout(noteTimer);
+        noteTimer=setTimeout(function(){
+          scratchSet(t.id, note.value.trim());
+          noteTip.textContent = note.value.trim() ? '已记' : '还没记';
+        }, 400);
+      }
+      note.addEventListener('input', saveNote);
+      note.addEventListener('change', function(){
+        clearTimeout(noteTimer);
+        scratchSet(t.id, note.value.trim());
+        noteTip.textContent = note.value.trim() ? '已记' : '还没记';
+      });
+      noteWrap.appendChild(note); noteWrap.appendChild(noteTip);
+      body.appendChild(noteWrap);
+
+      var desc=document.createElement('div'); desc.className='ti-desc'; desc.textContent=t.desc||'';
+
+      el.appendChild(chk); el.appendChild(body); el.appendChild(desc);
+
+      if(!t.moved){
+        var ord=document.createElement('span'); ord.className='ti-move';
+        var up=document.createElement('button'); up.type='button'; up.textContent='↑';
+        up.setAttribute('aria-label','上移');
+        up.addEventListener('click', function(e){ e.stopPropagation(); moveTodo(t.id,-1); });
+        var down=document.createElement('button'); down.type='button'; down.textContent='↓';
+        down.setAttribute('aria-label','下移');
+        down.addEventListener('click', function(e){ e.stopPropagation(); moveTodo(t.id,1); });
+        ord.appendChild(up); ord.appendChild(down);
+        el.appendChild(ord);
+      }
+
+      var btn=document.createElement('button');
+      if(s.run){
+        btn.className='ti-clock'; btn.textContent=fmt(elapsed(s));
+        btn.addEventListener('click', function(e){ e.stopPropagation(); showPanel(t.id); });
+      } else {
+        btn.className='ti-go'; btn.textContent='开始';
+        btn.addEventListener('click', function(e){ e.stopPropagation(); startTask(t.id); });
+      }
+      el.appendChild(btn);
+      box.appendChild(el);
+    });
+
+    renderMoved();
+  }
+
+  // 同一步骤内与相邻的一条交换位置，用来表达做事先后
+  function moveTodo(id, dir){
+    var p=P(current);
+    var idx=-1;
+    for(var i=0;i<p.todos.length;i++) if(p.todos[i].id===id){ idx=i; break; }
+    if(idx<0) return;
+    var t=p.todos[idx], target=-1;
+    for(var j=idx+dir; j>=0 && j<p.todos.length; j+=dir){
+      if(p.todos[j].stepIdx===t.stepIdx){ target=j; break; }
+    }
+    if(target<0) return;
+    var tmp=p.todos[idx]; p.todos[idx]=p.todos[target]; p.todos[target]=tmp;
+    renderTodos();
+    log('调整顺序', t.name+(dir<0?' 上移':' 下移'));
+  }
+
+  // 未归位的事务单独一块：放在待办之下、进度史之上
+  function renderMoved(){
+    var sec=document.getElementById('movedSec'), box=document.getElementById('movedList');
+    var list=todosOf(current).filter(function(t){ return t.stepIdx<0; });
+    if(!list.length){ sec.style.display='none'; box.innerHTML=''; return; }
+    sec.style.display='';
+    document.getElementById('movedCount').textContent=list.length+' 件';
+    box.innerHTML='';
+
+    list.forEach(function(t){
+      var s=timer(t.id);
+      var el=document.createElement('div');
+      el.className='ti'+(s.run?' running':'');
+      el.dataset.id=t.id;
+
+      var chk=document.createElement('button');
+      chk.type='button'; chk.className='ti-check';
+      chk.setAttribute('aria-label','标记完成');
+      chk.addEventListener('click', function(e){ e.stopPropagation(); finishTodo(t.id); });
+
+      var body=document.createElement('div'); body.className='ti-body';
+      var name=document.createElement('div'); name.className='ti-name'; name.textContent=t.name;
+      if(t.moved){
+        var src=document.createElement('span'); src.className='src'; src.textContent='从独立事项移入';
+        name.appendChild(src);
+      }
+      body.appendChild(name);
+      var meta=document.createElement('div'); meta.className='ti-meta';
+      meta.textContent='未分配步骤';
+      body.appendChild(meta);
+
+      var noteWrap=document.createElement('div'); noteWrap.className='ti-notewrap';
+      var note=document.createElement('input');
+      note.type='text'; note.className='ti-note'; note.placeholder='随手记：这一步的成果';
+      note.value=scratchGet(t.id);
+      var noteTip=document.createElement('span'); noteTip.className='ti-notetip';
+      noteTip.textContent = note.value ? '已记' : '还没记';
+      var noteTimer=null;
+      function saveNote(){
+        clearTimeout(noteTimer);
+        noteTimer=setTimeout(function(){
+          scratchSet(t.id, note.value.trim());
+          noteTip.textContent = note.value.trim() ? '已记' : '还没记';
+        }, 400);
+      }
+      note.addEventListener('input', saveNote);
+      note.addEventListener('change', function(){
+        clearTimeout(noteTimer);
+        scratchSet(t.id, note.value.trim());
+        noteTip.textContent = note.value.trim() ? '已记' : '还没记';
+      });
+      noteWrap.appendChild(note); noteWrap.appendChild(noteTip);
+      body.appendChild(noteWrap);
+
+      var desc=document.createElement('div'); desc.className='ti-desc'; desc.textContent=t.desc||'';
+
+      var pick=document.createElement('button');
+      pick.type='button'; pick.className='ti-go'; pick.textContent='选择步骤';
+      pick.addEventListener('click', function(e){ e.stopPropagation(); openStepPicker(el, t); });
+
+      el.appendChild(chk); el.appendChild(body); el.appendChild(desc); el.appendChild(pick);
+      box.appendChild(el);
+    });
+  }
+
+  /* 勾选完成：先变蓝，再移进进度史 */
+  function finishTodo(id){
+    var t=findTodo(id); if(!t) return;
+    var s=timer(id);
+    if(s.run){ s.acc=elapsed(s); s.run=false; s.paused=false; if(!t.moved) t.spent=s.acc/1000; }
+    t.done=true;
+    PENDING_DONE[id]=true;
+    renderTodos();
+    log('已完成', t.name);
+
+    setTimeout(function(){
+      delete PENDING_DONE[id];
+      var p=P(current);
+      if(t.moved){
+        writeMoved(readMoved().filter(function(m){ return !(m.project===current && m.name===t.name); }));
+      } else {
+        for(var i=0;i<p.todos.length;i++) if(p.todos[i].id===id){ p.todos.splice(i,1); break; }
+        var histId='h-'+current+'-'+Date.now();
+        p.history.unshift({id:histId, when:'刚刚', text:'完成了「'+t.name+'」', step:t.stepIdx, type:'改'});
+        scratchSet(histId, scratchGet(t.id));    // 随手记跟到进度史里，还能再改
+        scratchSet(t.id, '');
+        p.last='刚刚';
+      }
+      if(openId===id) hidePanel();
+      renderDetail();
+    }, 600);
+  }
+
+  /* ---------- 进度史：只有流程顺序 ---------- */
+  function renderHistory(){
+    var p=P(current), box=document.getElementById('history'),
+        tl=document.getElementById('timeline');
+    var list=p.history;
+    if(!list.length){
+      box.innerHTML=''; tl.innerHTML='';
+      box.style.display='none'; tl.style.display='none';
+      return;
+    }
+
+    if(axis==='timeline'){
+      box.style.display='none'; tl.style.display='';
+      tl.innerHTML='';
+      var day='';
+      list.forEach(function(h){
+        var d=h.when.split(' ')[0];
+        if(d!==day){ day=d; var dh=document.createElement('div'); dh.className='tl-day'; dh.textContent=d; tl.appendChild(dh); }
+        var node=document.createElement('div'); node.className='tl';
+        if(h===editRef){
+          node.appendChild(histEditBox(h));
+        } else {
+          var txt=document.createElement('div'); txt.className='tl-text'; txt.textContent=h.text;
+          node.appendChild(txt);
+          node.appendChild(editBtn(h));
+          node.appendChild(historyNote(h));
+        }
+        var when=document.createElement('div'); when.className='tl-when'; when.textContent=(h.step>=0?'第 '+(h.step+1)+' 步':'未分配步骤');
+        node.appendChild(when); tl.appendChild(node);
+      });
+      return;
+    }
+
+    box.style.display=''; tl.style.display='none'; box.innerHTML='';
+    list.slice().sort(function(a,b){ return (a.step||0)-(b.step||0); }).forEach(function(h){
+      box.appendChild(historyRow(h));
+    });
+  }
+
+  // 进度史里每条都能补一段随手记（任务完成后也还改得动）
+  function historyNote(h){
+    var box=document.createElement('div'); box.className='h-notebox';
+    var hid=h.id || ('h-'+current+'-'+(h.when||''));
+    function paint(){
+      box.innerHTML='';
+      var val=scratchGet(hid);
+      var row=document.createElement('div'); row.className='h-noterow';
+      var txt=document.createElement('div'); txt.className='h-notetext';
+      txt.textContent=val;
+      if(!val){ txt.className+=' empty'; txt.textContent='还没记'; }
+      var btn=document.createElement('button'); btn.className='h-notebtn';
+      btn.textContent=val?'改随手记':'随手记';
+      btn.addEventListener('click', edit);
+      row.appendChild(txt); row.appendChild(btn);
+      box.appendChild(row);
+    }
+    function edit(){
+      box.innerHTML='';
+      var ta=document.createElement('textarea'); ta.className='h-noteedit';
+      ta.placeholder='记一笔这一步的成果'; ta.value=scratchGet(hid);
+      var bar=document.createElement('div'); bar.className='h-notebar';
+      var save=document.createElement('button'); save.className='h-notesave'; save.textContent='保存';
+      var cancel=document.createElement('button'); cancel.className='h-notecancel'; cancel.textContent='取消';
+      save.addEventListener('click', function(){ scratchSet(hid, ta.value.trim()); paint(); log('随手记',''); });
+      cancel.addEventListener('click', function(){ paint(); });
+      ta.addEventListener('keydown', function(e){
+        if(e.key==='Escape'){ e.stopPropagation(); paint(); }
+      });
+      bar.appendChild(save); bar.appendChild(cancel);
+      box.appendChild(ta); box.appendChild(bar);
+      ta.focus();
+    }
+    paint();
+    return box;
+  }
+
+  function historyRow(h){
+    var row=document.createElement('div'); row.className='h';
+    var when=document.createElement('div'); when.className='h-when'; when.textContent=h.when;
+    var body=document.createElement('div'); body.className='h-body';
+    var meta=document.createElement('div'); meta.className='h-meta';
+    var tag=document.createElement('span'); tag.className='tag2';
+    tag.textContent = (h.step>=0 ? '第 '+(h.step+1)+' 步' : '未分配步骤');
+    meta.appendChild(tag);
+
+    if(h.revs){
+      var rev=document.createElement('button'); rev.className='rev'; rev.textContent='改过 1 次';
+      var rbox=document.createElement('div'); rbox.className='revbox';
+      rbox.innerHTML='<b>修订链</b><br>'+h.revs;
+      rev.addEventListener('click', function(){ rbox.classList.toggle('on'); });
+      meta.appendChild(rev);
+    }
+    if(h!==editRef) meta.appendChild(editBtn(h));
+
+    if(h===editRef){
+      body.appendChild(histEditBox(h));
+    } else {
+      var text=document.createElement('div'); text.className='h-text'; text.textContent=h.text;
+      body.appendChild(text);
+      body.appendChild(historyNote(h));
+    }
+    body.appendChild(meta);
+    if(h.revs && h!==editRef && rbox) body.appendChild(rbox);
+    row.appendChild(when); row.appendChild(body);
+    return row;
+  }
+
+  function editBtn(h){
+    var b=document.createElement('button');
+    b.className='h-editbtn'; b.textContent='编辑';
+    b.addEventListener('click', function(){ editRef=h; renderHistory(); });
+    return b;
+  }
+
+  function histEditBox(h){
+    var box=document.createElement('div'); box.className='h-edit';
+    var ta=document.createElement('textarea'); ta.className='h-edit-in'; ta.value=h.text;
+    var acts=document.createElement('div'); acts.className='h-edit-acts';
+    var save=document.createElement('button'); save.className='h-save'; save.textContent='保存';
+    var cancel=document.createElement('button'); cancel.className='h-cancel'; cancel.textContent='取消';
+
+    save.addEventListener('click', function(){
+      var v=ta.value.trim();
+      if(v) h.text=v;
+      editRef=null; renderHistory();
+      log('改进度史', v.slice(0,14));
+    });
+    cancel.addEventListener('click', function(){ editRef=null; renderHistory(); });
+    ta.addEventListener('keydown', function(e){
+      if(e.key==='Escape'){ e.stopPropagation(); editRef=null; renderHistory(); }
+    });
+
+    acts.appendChild(save); acts.appendChild(cancel);
+    box.appendChild(ta); box.appendChild(acts);
+    return box;
+  }
+
+  /* ---------- 编辑流程 ---------- */
+  function renderFlowEdit(){
+    var p=P(current), list=document.getElementById('feList');
+    list.innerHTML='';
+    p.steps.forEach(function(name,i){
+      var step=document.createElement('div'); step.className='fe-step';
+      var row=document.createElement('div'); row.className='fe-row';
+
+      var no=document.createElement('span'); no.className='fe-no'; no.textContent=(i+1);
+      var input=document.createElement('input'); input.className='fe-name'; input.value=name;
+      input.maxLength=12; input.placeholder='步骤名';
+      input.addEventListener('change', function(){
+        p.steps[i]=input.value.trim()||name;
+        renderTrack(); renderFilterTip(); renderTodos();
+        log('改步骤名', p.steps[i]);
+      });
+
+      var up=document.createElement('button'); up.type='button'; up.className='fe-mini'; up.textContent='↑';
+      up.addEventListener('click', function(){ moveStep(i,-1); });
+      var down=document.createElement('button'); down.type='button'; down.className='fe-mini'; down.textContent='↓';
+      down.addEventListener('click', function(){ moveStep(i,1); });
+      var del=document.createElement('button'); del.type='button'; del.className='fe-mini'; del.textContent='删除';
+      del.addEventListener('click', function(){
+        p.steps.splice(i,1);
+        p.todos.forEach(function(t){ if(t.stepIdx===i) t.stepIdx=-1; else if(t.stepIdx>i) t.stepIdx--; });
+        filterStep = p.steps.length ? Math.min(p.cur, p.steps.length-1) : null;
+        renderDetail(); log('删除步骤','');
+      });
+      var add=document.createElement('button'); add.type='button'; add.className='fe-mini'; add.textContent='新增事项';
+      add.addEventListener('click', function(){ openAddRow(step, i); });
+
+      row.appendChild(no); row.appendChild(input);
+      row.appendChild(up); row.appendChild(down); row.appendChild(del); row.appendChild(add);
+      step.appendChild(row);
+      list.appendChild(step);
+    });
+  }
+
+  /* 这一步加一件事：行内先出输入框，确认后落到待办并闪一下 */
+  function openAddRow(step, i){
+    var old=step.querySelector('.fe-addrow');
+    if(old){ old.querySelector('input').focus(); return; }
+
+    var wrap=document.createElement('div'); wrap.className='fe-addrow';
+    var input=document.createElement('input');
+    input.type='text'; input.placeholder='这一步要做的事'; input.maxLength=40;
+    var ok=document.createElement('button'); ok.type='button'; ok.className='fe-ok'; ok.textContent='添加'; ok.disabled=true;
+    var cancel=document.createElement('button'); cancel.type='button'; cancel.className='fe-cancel'; cancel.textContent='取消';
+
+    function submit(){
+      var v=input.value.trim(); if(!v) return;
+      wrap.remove();
+      addTodoToStep(i, v);
+    }
+    input.addEventListener('input', function(){ ok.disabled=!input.value.trim(); });
+    input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ e.preventDefault(); submit(); }
+      else if(e.key==='Escape'){ e.stopPropagation(); wrap.remove(); }
+    });
+    ok.addEventListener('click', submit);
+    cancel.addEventListener('click', function(){ wrap.remove(); });
+
+    wrap.appendChild(input); wrap.appendChild(ok); wrap.appendChild(cancel);
+    step.appendChild(wrap);
+    input.focus();
+  }
+
+  function addTodoToStep(i, name){
+    var p=P(current);
+    var todo={id:'s'+Date.now()+'-'+Math.floor(Math.random()*1000), name:name, desc:'', stepIdx:i, min:5, spent:0};
+    p.todos.push(todo);
+    filterStep=i;                 // 只显示刚加的那一步，保证看得见
+    renderTrack(); renderFilterTip(); renderTodos();
+    log('加一件事', '第 '+(i+1)+' 步 · '+name);
+    var el=document.querySelector('.ti[data-id="'+todo.id+'"]');
+    if(el){
+      el.scrollIntoView({block:'nearest'});
+      el.classList.add('flash');
+      setTimeout(function(){ el.classList.remove('flash'); }, 1200);
+    }
+  }
+
+  function moveStep(i,dir){
+    var p=P(current);
+    var j=i+dir;
+    if(j<0 || j>=p.steps.length) return;
+    var tmp=p.steps[i]; p.steps[i]=p.steps[j]; p.steps[j]=tmp;
+    p.todos.forEach(function(t){
+      if(t.stepIdx===i) t.stepIdx=j;
+      else if(t.stepIdx===j) t.stepIdx=i;
+    });
+    var h=p.history.forEach(function(x){
+      if(x.step===i) x.step=j; else if(x.step===j) x.step=i;
+    });
+    filterStep=null;
+    renderDetail(); log('调整步骤顺序','');
+  }
+
+  document.getElementById('feAdd').addEventListener('click', function(){
+    var p=P(current);
+    p.steps.push('新步骤 '+(p.steps.length+1));
+    renderDetail(); log('加一步','');
+  });
+  document.getElementById('feDone').addEventListener('click', function(){
+    flowOpen=false; document.getElementById('flowEdit').classList.remove('on');
+    document.getElementById('flowBtn').textContent='编辑流程';
+  });
+  document.getElementById('flowBtn').addEventListener('click', function(){
+    flowOpen=!flowOpen;
+    document.getElementById('flowEdit').classList.toggle('on', flowOpen);
+    this.textContent = flowOpen ? '收起编辑' : '编辑流程';
+    if(flowOpen) renderFlowEdit();
+    log(flowOpen?'打开流程编辑':'收起流程编辑','');
+  });
+
+  /* ---------- AI 梳理 ---------- */
+  var hasKey = localStorage.getItem('aiKey')==='1';
+  var attached=[];
+
+  function renderAi(){
+    var body=document.getElementById('aiBody');
+    body.classList.toggle('on', aiOpen);
+    document.getElementById('aiHint').textContent = aiOpen?'收起':(hasKey?'展开':'未配置 key');
+
+    var input=document.getElementById('aiText'), send=document.getElementById('aiSend'),
+        pickF=document.getElementById('pickFile'), pickI=document.getElementById('pickImg');
+
+    // 与第 2 页同一套：没配置 key 就整块用不了，输入清空、按钮全灰
+    if(!hasKey){
+      input.readOnly=true; input.value='';
+      input.placeholder='请前往设置页配置 API key';
+      send.disabled=true;
+      pickF.disabled=true; pickI.disabled=true;
+      attached=[];
+    } else {
+      input.readOnly=false;
+      input.placeholder='可以用我拆解步骤、确定每步做什么';
+      send.disabled=aiBusy;
+      pickF.disabled=false; pickI.disabled=false;
+    }
+    renderFiles();
+  }
+
+  function renderFiles(){
+    var box=document.getElementById('aiFiles');
+    box.innerHTML='';
+    attached.forEach(function(f,i){
+      var chip=document.createElement('span'); chip.className='ai-chip';
+      var label=document.createElement('span'); label.textContent=f;
+      var x=document.createElement('button'); x.textContent='×';
+      x.addEventListener('click', function(){ attached.splice(i,1); renderFiles(); });
+      chip.appendChild(label); chip.appendChild(x); box.appendChild(chip);
+    });
+  }
+
+  document.getElementById('aiHead').addEventListener('click', function(){
+    aiOpen=!aiOpen; renderAi();
+    log(aiOpen?'展开 AI 梳理':'收起 AI 梳理','');
+  });
+  document.getElementById('aiText').addEventListener('click', function(){
+    if(!hasKey) log('AI 未启用','请前往设置页配置 key');
+  });
+  document.getElementById('pickFile').addEventListener('click', function(){
+    if(!hasKey){ log('AI 未启用','请前往设置页配置 key'); return; }
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('pickImg').addEventListener('click', function(){
+    if(!hasKey){ log('AI 未启用','请前往设置页配置 key'); return; }
+    document.getElementById('imgInput').click();
+  });
+  ['fileInput','imgInput'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', function(){
+      if(this.files && this.files[0]){ attached.push(this.files[0].name); renderFiles(); }
+      this.value='';
+    });
+  });
+
+  var aiBodyEl=document.getElementById('aiBody');
+  aiBodyEl.addEventListener('dragover', function(e){ e.preventDefault(); });
+  aiBodyEl.addEventListener('drop', function(e){
+    e.preventDefault();
+    if(!hasKey){ log('AI 未启用','请前往设置页配置 key'); return; }
+    var fs=e.dataTransfer && e.dataTransfer.files;
+    if(!fs) return;
+    for(var i=0;i<fs.length;i++) attached.push(fs[i].name);
+    renderFiles(); log('拖进来 '+'份资料','');
+  });
+
+  function bubble(cls, html){
+    var box=document.getElementById('aiLog');
+    var el=document.createElement('div'); el.className='msg '+cls; el.innerHTML=html;
+    box.appendChild(el); box.scrollTop=box.scrollHeight;
+    return el;
+  }
+
+  /* AI 回复的结构约定（接真实接口时按这个返回即可）：
+     { reply: "一句话结论", steps: [ { name: "定题", task: "把范围收到一句话" } ] }
+     window.AI_ENDPOINT 存在时向它 POST {project, question, files}；否则走本地 mock。 */
+  var aiSeq=0, aiBusy=false;
+
+  function requestAiPlan(project, question, files, onOk, onErr){
+    if(window.AI_ENDPOINT){
+      fetch(window.AI_ENDPOINT, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({project:project, question:question, files:files})
+      }).then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return r.json();
+      }).then(onOk).catch(function(e){ onErr(e); });
+      return;
+    }
+    setTimeout(function(){
+      onOk({
+        reply:'按你给的资料，这个项目可以拆成 3 步：',
+        steps:[
+          {name:'定题', task:'把范围收到一句话'},
+          {name:'写成文', task:'先出三段结论'},
+          {name:'交给导师', task:'发邮件并约时间'}
+        ]
+      });
+    }, 400);
+  }
+
+  // 回复来自接口，渲染前一律转义，别让模型输出直接当 HTML
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+
+  function renderPlan(plan, projectName){
+    var steps=plan.steps||[];
+    var html=esc(plan.reply||'这个项目可以这样拆：')+'<ol>'
+      + steps.map(function(s){ return '<li><b>'+esc(s.name)+'</b>：'+esc(s.task)+'</li>'; }).join('')
+      + '</ol>每步先挂一件事，点下面就把它们放进待办。'
+      + '<br><button class="apply">应用到项目</button>';
+    var msg=bubble('ai', html);
+    var btn=msg.querySelector('.apply');
+    btn.addEventListener('click', function(){
+      if(btn.disabled) return;
+      if(!applyPlan(plan, projectName)) return;
+      btn.disabled=true; btn.textContent='已应用';
+    });
+    return msg;
+  }
+
+  function applyPlan(plan, projectName){
+    var p=P(projectName);
+    if(!p) return false;
+    var steps=(plan.steps||[]).filter(function(s){ return s && s.name; });
+    if(!steps.length) return false;
+
+    var fresh = p.todos.length===0 && p.history.length===0;
+    var base;
+    if(fresh){
+      p.steps = steps.map(function(s){ return s.name; });
+      base = 0;
+    } else {
+      base = p.steps.length;
+      steps.forEach(function(s){ p.steps.push(s.name); });
+    }
+    steps.forEach(function(s,i){
+      p.todos.push({id:'a'+Date.now()+'-'+i, name:s.task||s.name, desc:'', stepIdx:base+i, min:10, spent:0});
+    });
+
+    if(current===projectName){ filterStep=null; renderDetail(); }
+    log('应用 AI 梳理', projectName+' · '+(fresh?'替换为 '+steps.length+' 步':'追加 '+steps.length+' 步'));
+    return true;
+  }
+
+  function setAiBusy(v){
+    aiBusy=v;
+    document.getElementById('aiSend').disabled = v || !hasKey;
+    document.getElementById('aiHint').textContent =
+      v ? '正在梳理' : (aiOpen ? '收起' : (hasKey ? '展开' : '未配置 key'));
+  }
+
+  function sendAi(){
+    if(!hasKey){ log('AI 未启用','请前往设置页配置 key'); return; }
+    if(aiBusy) return;
+
+    var input=document.getElementById('aiText');
+    var q=input.value.trim();
+    if(!q && !attached.length) return;
+
+    var projectName=current;
+    var files=attached.slice();
+    bubble('me', (q?q:'看看这些资料')+(files.length?'<br><span style="opacity:.8">附：'+files.join('、')+'</span>':''));
+    input.value=''; attached=[]; renderFiles();
+
+    var seq=++aiSeq;
+    setAiBusy(true);
+    requestAiPlan(projectName, q, files, function(plan){
+      if(seq!==aiSeq) return;              // 旧请求晚到就丢掉
+      setAiBusy(false);
+      renderPlan(plan, projectName);
+      log('AI 回复', (plan.steps||[]).length+' 步');
+    }, function(err){
+      if(seq!==aiSeq) return;
+      setAiBusy(false);
+      var msg=bubble('ai', '这次没接上：'+((err&&err.message)||'未知错误')
+        + '。<br><button class="apply retry">重试</button>');
+      msg.querySelector('.retry').addEventListener('click', function(){ msg.remove(); sendAi(); });
+      log('AI 请求失败', (err&&err.message)||'');
+    });
+  }
+
+  document.getElementById('aiSend').addEventListener('click', sendAi);
+  document.getElementById('aiText').addEventListener('keydown', function(e){
+    if(e.key!=='Enter' || e.isComposing) return;
+    e.preventDefault();                     // 输入法上屏那一下不算
+    sendAi();
+  });
+
+  /* ---------- 面板与计时 ---------- */
+  function showPanel(id){
+    var t=findTodo(id); if(!t) return;
+    openId=id;
+    var s=timer(id), p=P(current);
+    document.getElementById('pn').textContent=t.name;
+    document.getElementById('pmode').textContent = t.moved
+      ? current+' · 从独立事项移入'
+      : current+' · '+(t.stepIdx>=0?('第 '+(t.stepIdx+1)+' 步 / 共 '+p.steps.length+' 步'):'未分配步骤');
+
+    var track=document.getElementById('ptrack');
+    if(t.moved || t.stepIdx<0){ track.style.display='none'; }
+    else {
+      track.style.display='';
+      track.innerHTML='';
+      for(var i=0;i<p.steps.length;i++){
+        var seg=document.createElement('i');
+        if(i<p.cur) seg.className='done';
+        track.appendChild(seg);
+      }
+    }
+    document.getElementById('step').textContent = t.desc || (t.stepIdx>=0?(p.steps[t.stepIdx]||'这一步'):'这件事');
+    document.getElementById('pmeta').textContent = t.moved ? '没有流程轴' : ('约 '+(t.min||5)+' 分钟');
+    document.getElementById('timerbar').classList.toggle('paused', !!s.paused);
+    renderPause();
+    document.getElementById('clock').textContent=fmt(elapsed(s));
+    panel.classList.add('on');
+    positionPanel();
+  }
+  function hidePanel(){ panel.classList.remove('on'); openId=null; }
+  function positionPanel(){
+    if(!panel.classList.contains('on')) return;
+    var r=pet.querySelector('img').getBoundingClientRect();
+    var top=Math.max(12, Math.min(r.top+5, innerHeight-panel.offsetHeight-12));
+    panel.style.top=top+'px';
+    panel.style.right=(r.width-15)+'px';
+  }
+  function renderPause(){
+    var b=document.getElementById('pause');
+    var paused = openId ? timer(openId).paused : false;
+    b.setAttribute('aria-label', paused?'继续':'暂停');
+    b.innerHTML = paused
+      ? '<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M4 2.5l9 5.5-9 5.5z"/></svg>'
+      : '<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><rect x="4" y="2.5" width="3" height="11" rx="1"></rect><rect x="9" y="2.5" width="3" height="11" rx="1"/></svg>';
+  }
+
+  function startTask(id){
+    var t=findTodo(id); if(!t) return;
+    var s=timer(id);
+    if(!s.run){ s.run=true; s.paused=false; s.from=Date.now(); }
+    app.classList.remove('on');
+    pet.classList.add('on');
+    showPanel(id);
+    renderTodos();
+    log('evt_start', t.name);
+  }
+
+  document.getElementById('pause').addEventListener('click', function(){
+    if(!openId) return;
+    var s=timer(openId);
+    if(!s.run) return;
+    if(s.paused){ s.paused=false; s.from=Date.now(); }
+    else { s.acc=elapsed(s); s.paused=true; }
+    document.getElementById('timerbar').classList.toggle('paused', s.paused);
+    renderPause();
+    log(s.paused?'暂停':'继续','');
+  });
+
+  document.getElementById('stop').addEventListener('click', function(){
+    if(!openId) return;
+    var id=openId, s=timer(id), t=findTodo(id);
+    s.acc=elapsed(s); s.run=false; s.paused=false;
+    if(t){
+      if(t.moved) MOVED_SPENT[t.id]=(MOVED_SPENT[t.id]||0)+s.acc/1000;
+      else t.spent += s.acc/1000;
+    }
+    var name=t?t.name:'';
+    hidePanel(); renderTodos();
+    log('evt_stop', name+' · 已做 '+mins(s.acc/1000)+' 分钟');
+  });
+
+  document.getElementById('pdone').addEventListener('click', function(){
+    if(!openId) return;
+    var id=openId; hidePanel(); finishTodo(id);
+  });
+
+  /* ---------- 两态切换 ---------- */
+  function render(){
+    if(view==='list'){
+      document.getElementById('listView').style.display='';
+      document.getElementById('detailView').style.display='none';
+      renderList();
+    } else {
+      document.getElementById('listView').style.display='none';
+      document.getElementById('detailView').style.display='';
+      renderDetail();
+    }
+  }
+  document.getElementById('back').addEventListener('click', function(){
+    view='list'; filterStep=null; render(); log('回到项目列表','');
+  });
+
+  /* ---------- 删除项目（二次确认） ---------- */
+  var delModal=document.getElementById('delModal');
+
+  document.getElementById('delBtn').addEventListener('click', function(){
+    document.getElementById('delTitle').textContent='删除「'+current+'」？';
+    delModal.classList.add('on');
+    log('打开删除确认', current);
+  });
+  document.getElementById('delCancel').addEventListener('click', function(){
+    delModal.classList.remove('on');
+  });
+  delModal.addEventListener('click', function(e){
+    if(e.target===delModal) delModal.classList.remove('on');
+  });
+  document.getElementById('delOk').addEventListener('click', function(){
+    var name=current;
+    delete PROJECTS[name];
+    order=order.filter(function(n){ return n!==name; });
+
+    try{
+      var custom=JSON.parse(localStorage.getItem('customProjects')||'[]');
+      localStorage.setItem('customProjects', JSON.stringify(custom.filter(function(c){ return c.name!==name; })));
+    }catch(e){}
+
+    writeMoved(readMoved().filter(function(m){ return m.project!==name; }));
+
+    delModal.classList.remove('on');
+    view='list'; filterStep=null; render();
+    log('删除项目', name);
+  });
+
+  /* ---------- 新建项目 ---------- */
+  var pform=document.getElementById('pform'),
+      pName=document.getElementById('pName'),
+      pDesc=document.getElementById('pDesc'),
+      pDue=document.getElementById('pDue'),
+      pOk=document.getElementById('pOk'),
+      pErr=document.getElementById('pErr');
+
+  function validName(v){
+    v=v.trim();
+    if(!v) return '';
+    if(P(v) || order.indexOf(v)>=0) return '已有同名项目';
+    return '';
+  }
+  function refreshOk(){
+    var err=validName(pName.value);
+    pErr.textContent=err||'已有同名项目';
+    pErr.classList.toggle('on', !!err);
+    pOk.disabled=!!err;
+  }
+  function openForm(){
+    pform.classList.add('on');
+    pName.value=''; pDesc.value=''; pDue.value='';
+    pErr.classList.remove('on'); pOk.disabled=true; pName.focus();
+    log('点新建项目','表单展开');
+  }
+  function closeForm(){ pform.classList.remove('on'); }
+
+  document.getElementById('newBtn').addEventListener('click', openForm);
+  document.getElementById('pemptyNew').addEventListener('click', openForm);
+  document.getElementById('pCancel').addEventListener('click', function(){ closeForm(); log('取消新建',''); });
+  pName.addEventListener('input', refreshOk);
+
+  pOk.addEventListener('click', function(){
+    var name=pName.value.trim(); if(!name) return;
+    PROJECTS[name]={
+      desc:pDesc.value.trim(), last:'今天', cur:0, due:pDue.value||'',
+      steps:[''],                      // 新项目的流程从一个空步骤开始
+      todos:[], history:[]
+    };
+    order.unshift(name);
+
+    var custom=[];
+    try{ custom=JSON.parse(localStorage.getItem('customProjects')||'[]'); }catch(e){ custom=[]; }
+    custom.push({name:name, desc:PROJECTS[name].desc, due:PROJECTS[name].due});
+    localStorage.setItem('customProjects', JSON.stringify(custom));
+
+    closeForm(); log('新建项目', name);
+    openProject(name);
+  });
+
+  /* ---------- 进度史视图切换 ---------- */
+  document.getElementById('viewBtn').addEventListener('click', function(){
+    axis = axis==='history' ? 'timeline' : 'history';
+    document.getElementById('histTitle').textContent = axis==='history'?'进度史':'时间轴';
+    this.textContent = axis==='history'?'时间轴':'进度史';
+    renderHistory();
+    log('切视图', axis==='history'?'进度史':'时间轴');
+  });
+
+
+
+  /* ---------- 桌宠 / Esc ---------- */
+  pet.addEventListener('click', function(){
+    hidePanel(); pet.classList.remove('on'); app.classList.add('on'); log('回到我的项目','');
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape') return;
+    if(delModal.classList.contains('on')){ delModal.classList.remove('on'); return; }
+    if(panel.classList.contains('on')){ hidePanel(); return; }
+    if(pform.classList.contains('on')){ closeForm(); return; }
+    if(flowOpen){ flowOpen=false; document.getElementById('flowEdit').classList.remove('on'); document.getElementById('flowBtn').textContent='编辑流程'; return; }
+    if(filterStep!==null){ filterStep=null; renderTrack(); renderFilterTip(); renderTodos(); return; }
+    if(view==='detail'){ view='list'; render(); }
+  });
+  addEventListener('resize', positionPanel);
+
+  /* ---------- 标签 ---------- */
+  document.getElementById('tabs').addEventListener('click', function(e){
+    var b=e.target.closest('.tab'); if(!b) return;
+    var btns=this.querySelectorAll('.tab');
+    for(var i=0;i<btns.length;i++) btns[i].classList.toggle('on', btns[i].dataset.tab===b.dataset.tab);
+    var isProjects=b.dataset.tab==='projects';
+    document.getElementById('page-projects').classList.toggle('on', isProjects);
+    document.getElementById('page-todo').classList.toggle('on', !isProjects);
+    document.getElementById('page-todo').innerHTML='<div class="todo">「'+b.textContent+'」在后面几轮做，先看「我的项目」。</div>';
+    log('切到标签', b.textContent);
+  });
+
+  /* ---------- 控制条 ---------- */
+  document.querySelector('.hud').addEventListener('click', function(e){
+    var act=e.target.dataset.act; if(!act) return;
+    if(act==='form'){
+      if(view!=='list'){ view='list'; render(); }
+      openForm();
+    }
+    if(act==='aikey'){
+      hasKey=!hasKey;
+      localStorage.setItem('aiKey', hasKey?'1':'0');
+      e.target.textContent = hasKey?'已配置 key':'切换 key 状态';
+      e.target.classList.toggle('on', hasKey);
+      renderAi();
+      log(hasKey?'已配置模型 key':'未配置模型 key','');
+    }
+    if(act==='move'){
+      var all=readMoved();
+      all.push({project:current, name:'临时想到的一件事 '+(all.length+1), desc:'从别处收进来的', at:Date.now()});
+      writeMoved(all);
+      if(view==='detail') renderTodos();
+      log('模拟移入', current);
+    }
+    if(act==='clearmove'){ writeMoved([]); if(view==='detail') renderTodos(); log('清空移入记录',''); }
+    if(act==='emptyprojects'){ order=[]; view='list'; render(); log('清空项目','看空态'); }
+    if(act==='emptyhist'){
+      if(view!=='detail'){ log('先展开一个项目',''); return; }
+      P(current).history=[]; renderDetail(); log('清空进度史','看空态');
+    }
+    if(act==='reset'){ location.reload(); }
+  });
+
+  var hudToggle=document.getElementById('hudToggle');
+  hudToggle.addEventListener('click', function(){
+    var collapsed=document.getElementById('hud').classList.toggle('collapsed');
+    hudToggle.textContent = collapsed?'演示控制':'收起演示';
+  });
+
+  /* ---------- 走秒 ---------- */
+  setInterval(function(){
+    if(openId) document.getElementById('clock').textContent=fmt(elapsed(timer(openId)));
+    var clocks=document.querySelectorAll('.ti-clock');
+    for(var i=0;i<clocks.length;i++){
+      var row=clocks[i].closest('.ti');
+      if(row) clocks[i].textContent=fmt(elapsed(timer(row.dataset.id)));
+    }
+  }, 250);
+
+  /* ---------- 启动 ---------- */
+  var saved=[];
+  try{ saved=JSON.parse(localStorage.getItem('customProjects')||'[]'); }catch(e){ saved=[]; }
+  saved.forEach(function(c){
+    if(PROJECTS[c.name]) return;
+    PROJECTS[c.name]={desc:c.desc||'', last:'今天', cur:0, due:c.due||'',
+      steps:[''],                      // 恢复出来的自定义项目同样从空步骤开始
+      todos:[], history:[]};
+    order.unshift(c.name);
+  });
+
+  renderAi();
+  renderList();
+})();
+</script>
+</body>
+</html>
