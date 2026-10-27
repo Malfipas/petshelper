@@ -13,7 +13,12 @@ import 'panel_notifier.dart';
 /// 这一层只负责里面的东西：项目名与流程轴（或独立事项）、随手记、动作区、问一问。
 /// 所有数值取自 `prototype/整体原型.html` 的 `aside.panel` 一节。
 class PanelPage extends ConsumerStatefulWidget {
-  const PanelPage({super.key});
+  const PanelPage({super.key, this.onOpenProject});
+
+  /// 点项目名时回传项目 id，由常驻页切档并落到第 6 页那一个项目。
+  ///
+  /// 可空：`/panel` 那条地址能直达这一页，那里没有常驻页可回传。
+  final void Function(String projectId)? onOpenProject;
 
   @override
   ConsumerState<PanelPage> createState() => _PanelPageState();
@@ -106,13 +111,25 @@ class _PanelPageState extends ConsumerState<PanelPage> {
     );
   }
 
-  /// 空态。《页面操作流程》第 4 节：「无事项状态，正中央显示『当前暂无事项』」。
+  /// 空态。《页面操作流程》第 4 节：「无事项状态，正中央显示『当前暂无事项』」，
+  /// 下面跟一句往哪走——空态只给一句「没有」等于把用户堵在面板里。
   Widget _buildEmpty() {
     return const Center(
-      child: Text(
-        '当前暂无事项',
-        key: ValueKey<String>('panel-empty-title'),
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.ink),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '当前暂无事项',
+            key: ValueKey<String>('panel-empty-title'),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.ink),
+          ),
+          SizedBox(height: 6),
+          Text(
+            '点桌宠进主界面挑一件',
+            key: ValueKey<String>('panel-empty-hint'),
+            style: TextStyle(fontSize: 12, color: AppTheme.ink3),
+          ),
+        ],
       ),
     );
   }
@@ -146,6 +163,7 @@ class _PanelPageState extends ConsumerState<PanelPage> {
           name: state.title,
           nameKey: const ValueKey<String>('panel-project-name'),
           due: state.dueLabel,
+          onTap: state.projectId == null ? null : () => widget.onOpenProject?.call(state.projectId!),
         ),
         Padding(
           padding: const EdgeInsets.only(top: _trackTop, bottom: _trackBottom),
@@ -177,11 +195,22 @@ class _PanelPageState extends ConsumerState<PanelPage> {
   }
 
   /// 行 1：左边名字，右边截止时间；没填截止就只留名字。
+  ///
+  /// 项目名可点（PRD 第 2 页 370 行）：落到第 6 页并展开这个项目。独立事项没有
+  /// 项目页可落，不传 `onTap`。
   Widget _buildTitleLine({
     required String name,
     required Key nameKey,
     required String? due,
+    VoidCallback? onTap,
   }) {
+    final label = Text(
+      name,
+      key: nameKey,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.ink),
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -189,13 +218,17 @@ class _PanelPageState extends ConsumerState<PanelPage> {
         textBaseline: TextBaseline.alphabetic,
         children: [
           Expanded(
-            child: Text(
-              name,
-              key: nameKey,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.ink),
-            ),
+            child: onTap == null
+                ? label
+                : MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      key: const ValueKey<String>('panel-project-link'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onTap,
+                      child: label,
+                    ),
+                  ),
           ),
           if (due != null)
             Text(
@@ -610,7 +643,7 @@ class _Track extends StatelessWidget {
             child: i < names.length
                 ? Tooltip(
                     key: ValueKey<String>('panel-track-tip-$i'),
-                    message: names[i],
+                    message: '第 ${i + 1} 步 · ${names[i]}',
                     waitDuration: const Duration(milliseconds: 200),
                     child: _segment(i),
                   )

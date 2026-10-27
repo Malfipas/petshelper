@@ -48,7 +48,7 @@ void main() {
   }
 
   group('首屏', () {
-    test('播报每个项目一行，最多三行，剩下的说还有几个', () async {
+    test('播报每个项目一行，最多三行，多的不提示', () async {
       for (var i = 0; i < 5; i++) {
         await project(name: '项目$i', steps: ['第一步']);
       }
@@ -58,7 +58,6 @@ void main() {
 
       final report = state().report!;
       expect(report.rows, hasLength(PetNotifier.maxReportRows));
-      expect(report.more, 2);
       expect(report.rows.first.name, '项目0');
     });
 

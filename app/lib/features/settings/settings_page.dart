@@ -7,12 +7,14 @@ import '../../app/theme.dart';
 import 'settings_notifier.dart';
 import 'settings_state.dart';
 
-/// 第 8 页 · 设置：模型 API key 与只读地址。
+/// 第 8 页 · 设置：模型 API key、只读地址、开机自启。
 ///
 /// 三件事刻意没做：
 /// - 不在页面上回显已存的 key。输入框每次进来都是空的，只有本次敲进去的内容
 ///   才看得见（PRD 第 8 页 733–734 行：不回显完整 key）。
-/// - 不在卡片里放说明文字与状态行。存没存由按钮上那一下「已保存／已清除」说话。
+/// - 不堆说明文字。卡片里只有标题、一句状态和控件本身。「key 卡片不放状态行」
+///   这条 2026-10-27 破了：存完切出再进来，输入框是空的，分不清「存住了」还是
+///   「没存」，标题旁那两个字只解决这个歧义。
 /// - 「演示视频」那一行暂时整行注释掉：真实链接还没定，摆个占位地址只会让人
 ///   复制了去打不开。notifier 与仓库那头的读写都还在，放开时把那几行注释放开即可。
 class SettingsPage extends ConsumerStatefulWidget {
@@ -226,6 +228,49 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     copyLabel: state.copyLabel(demo: false),
                     copyKey: const ValueKey<String>('settings-copy-repo'),
                     onCopy: () => unawaited(notifier.copyRepo()),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // 装上就自启，而且没有出口，用户只能去注册表里删——这一格就是那个出口。
+            _Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '启动',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: AppTheme.fontCardTitle,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          '开机后自动出现在桌面右缘',
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: AppTheme.fontBody,
+                            color: AppTheme.ink2,
+                          ),
+                        ),
+                      ),
+                      Switch(
+                        key: const ValueKey<String>('settings-autostart'),
+                        value: state.autoStart,
+                        activeThumbColor: Colors.white,
+                        activeTrackColor: AppTheme.primary,
+                        // 写注册表还没回来时先禁用：连点两下会让最终状态取决于谁后到。
+                        onChanged: state.autoStartBusy
+                            ? null
+                            : (value) => unawaited(notifier.setAutoStart(value)),
+                      ),
+                    ],
                   ),
                 ],
               ),

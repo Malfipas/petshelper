@@ -132,7 +132,7 @@ class _PetPageState extends ConsumerState<PetPage> {
                 child: MouseRegion(
                   onEnter: (_) => _notifier.hoverEnter(),
                   onExit: (_) => _notifier.hoverExit(),
-                  child: const _PanelSurface(),
+                  child: _PanelSurface(onOpenProject: _viewProject),
                 ),
               ),
             if (frame.deadlineBubble != null && state.deadlines.isNotEmpty)
@@ -214,7 +214,7 @@ class _PetPageState extends ConsumerState<PetPage> {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: expanded ? _collapse : _openMain,
-            onSecondaryTapDown: (_) => widget.onOpenSettings?.call(),
+            onSecondaryTapDown: (_) => unawaited(_openSettings()),
             child: _PetImage(
               side: state.side,
               expanded: expanded,
@@ -275,6 +275,19 @@ class _PetPageState extends ConsumerState<PetPage> {
   void _viewReport() {
     _notifier.dismiss(PetBubbleKind.report);
     unawaited(_openMain().then((_) => widget.onOpenProjects?.call()));
+  }
+
+  /// 右键宠物：先切到主界面档，再跳设置页。
+  ///
+  /// 只跳路由不切档的话，设置页会被塞进收起档那个小窗里——宽两百多的框装一张
+  /// 四百二十宽的卡片。已经在主界面档时不再走一遍 `_openMain`，免得刚摆好的
+  /// 窗口又收放一次。
+  Future<void> _openSettings() async {
+    if (_pushedStage == PetViewStage.main) {
+      widget.onOpenSettings?.call();
+      return;
+    }
+    await _openMain().then((_) => widget.onOpenSettings?.call());
   }
 
   /// 把档位与气泡占位推给窗口。内容没变就不推，免得窗口一直重摆。
@@ -371,11 +384,14 @@ class _PetImageState extends State<_PetImage> with SingleTickerProviderStateMixi
 
 /// 悬停面板的内容。位置与尺寸由 `PetFrame.panel` 让出来，样式与内容在 `PanelPage` 里。
 class _PanelSurface extends StatelessWidget {
-  const _PanelSurface();
+  const _PanelSurface({required this.onOpenProject});
+
+  /// 面板里点项目名要落到第 6 页那一个项目；动作在常驻页里做，面板只管回传 id。
+  final void Function(String projectId) onOpenProject;
 
   @override
   Widget build(BuildContext context) {
-    return const PanelPage();
+    return PanelPage(onOpenProject: onOpenProject);
   }
 }
 

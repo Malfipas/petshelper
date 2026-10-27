@@ -30,6 +30,8 @@ class SettingsState {
     this.repoUrl = '',
     this.configured = false,
     this.revealed = false,
+    this.autoStart = true,
+    this.autoStartBusy = false,
     this.flash,
     this.alert = '',
     this.selectTick = 0,
@@ -50,6 +52,15 @@ class SettingsState {
 
   /// key 输入框是不是明文。默认掩码。
   final bool revealed;
+
+  /// 开机自启现在开着没有。
+  ///
+  /// 初值给真：装上就自启是这一版的实际行为，界面在读到注册表真值之前先照它画，
+  /// 别先闪一下「关」再跳「开」。
+  final bool autoStart;
+
+  /// 正在写注册表，开关先禁用，免得连点两下打乱最终状态。
+  final bool autoStartBusy;
 
   /// 哪个按钮在闪临时文字，没有就是 null。
   final SettingsFlash? flash;
@@ -84,6 +95,8 @@ class SettingsState {
     String? repoUrl,
     bool? configured,
     bool? revealed,
+    bool? autoStart,
+    bool? autoStartBusy,
     SettingsFlash? flash,
     bool clearFlash = false,
     String? alert,
@@ -94,6 +107,8 @@ class SettingsState {
     repoUrl: repoUrl ?? this.repoUrl,
     configured: configured ?? this.configured,
     revealed: revealed ?? this.revealed,
+    autoStart: autoStart ?? this.autoStart,
+    autoStartBusy: autoStartBusy ?? this.autoStartBusy,
     flash: clearFlash ? null : (flash ?? this.flash),
     alert: alert ?? this.alert,
     selectTick: selectTick ?? this.selectTick,

@@ -157,15 +157,28 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     });
 
-    testWidgets('右键宠物打开设置', (tester) async {
+    testWidgets('右键宠物先切到主界面档，再打开设置', (tester) async {
       var settings = 0;
-      await pumpPage(tester, onOpenSettings: () => settings++);
+      var opened = 0;
+      await pumpPage(tester, onOpenMain: () => opened++, onOpenSettings: () => settings++);
 
       final gesture = await tester.startGesture(petCenter(tester), buttons: kSecondaryMouseButton);
       await gesture.up();
       await tester.pump();
 
+      // 只跳路由不切档的话，设置页会挤进收起态那个小窗里。
+      expect(container.read(petNotifierProvider).stage, PetViewStage.main);
+      expect(port.calls, contains('main'));
+      expect(opened, 1);
       expect(settings, 1);
+
+      // 已经在主界面档，再右键不重复摆一次窗口。
+      final again = await tester.startGesture(petCenter(tester), buttons: kSecondaryMouseButton);
+      await again.up();
+      await tester.pump();
+
+      expect(opened, 1);
+      expect(settings, 2);
     });
 
     testWidgets('托盘点唤出主界面时，常驻页切展开态并叫路由开主界面', (tester) async {

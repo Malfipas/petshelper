@@ -13,7 +13,9 @@ void main() {
     final autoStart = _FakeAutoStart();
     final controller = AutoStartController(autoStart);
 
-    expect(await controller.setOn(true), isTrue);
+    final result = await controller.setOn(true);
+    expect(result.accepted, isTrue);
+    expect(result.on, isTrue);
     expect(await controller.isOn(), isTrue);
     expect(autoStart.enables, 1);
   });
@@ -22,7 +24,9 @@ void main() {
     final autoStart = _FakeAutoStart()..on = true;
     final controller = AutoStartController(autoStart);
 
-    expect(await controller.setOn(false), isFalse);
+    final result = await controller.setOn(false);
+    expect(result.accepted, isTrue);
+    expect(result.on, isFalse);
     expect(await controller.isOn(), isFalse);
     expect(autoStart.disables, 1);
   });
@@ -30,14 +34,29 @@ void main() {
   test('系统拒收时开关不装作开了', () async {
     final controller = AutoStartController(_FakeAutoStart(accept: false));
 
-    expect(await controller.setOn(true), isFalse);
+    // 没接受，但真值仍是「关」——这两种情况要分得开，界面才知道该不该提示。
+    final result = await controller.setOn(true);
+    expect(result.accepted, isFalse);
+    expect(result.on, isFalse);
     expect(await controller.isOn(), isFalse);
+  });
+
+  test('系统拒收撤不掉时，真值还是「开」', () async {
+    final autoStart = _FakeAutoStart(accept: false)..on = true;
+    final controller = AutoStartController(autoStart);
+
+    final result = await controller.setOn(false);
+    expect(result.accepted, isFalse);
+    // 关键：不能因为「没接受」就报成「关」。
+    expect(result.on, isTrue);
   });
 
   test('系统说写了但状态没变，也算没开', () async {
     final controller = AutoStartController(_StuckAutoStart());
 
-    expect(await controller.setOn(true), isFalse);
+    final result = await controller.setOn(true);
+    expect(result.accepted, isTrue);
+    expect(result.on, isFalse);
   });
 }
 

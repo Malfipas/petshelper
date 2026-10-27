@@ -38,6 +38,7 @@ class PanelState {
   const PanelState({
     this.kind = PanelKind.empty,
     this.taskId,
+    this.projectId,
     this.title = '',
     this.stepIndex = -1,
     this.totalSteps = 0,
@@ -58,6 +59,11 @@ class PanelState {
 
   /// 当前事务的 id；空态为 null。
   final String? taskId;
+
+  /// 这一件属于哪个项目；独立事项与空态为 null。
+  ///
+  /// 只给「点项目名落到第 6 页」用，取数不用它——取数认 `taskId`。
+  final String? projectId;
 
   /// 项目名（形态 A）或事项名（形态 B）。
   final String title;
@@ -140,6 +146,7 @@ class PanelState {
   PanelState copyWith({
     PanelKind? kind,
     String? taskId,
+    String? projectId,
     String? title,
     int? stepIndex,
     int? totalSteps,
@@ -158,6 +165,7 @@ class PanelState {
     return PanelState(
       kind: kind ?? this.kind,
       taskId: taskId ?? this.taskId,
+      projectId: projectId ?? this.projectId,
       title: title ?? this.title,
       stepIndex: stepIndex ?? this.stepIndex,
       totalSteps: totalSteps ?? this.totalSteps,
@@ -548,6 +556,7 @@ class PanelNotifier extends Notifier<PanelState> {
     state = PanelState(
       kind: PanelKind.project,
       taskId: item.id,
+      projectId: project.id,
       title: project.name,
       stepIndex: project.currentStep,
       totalSteps: ordered.length,

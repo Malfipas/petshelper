@@ -24,9 +24,13 @@ class AutoStartController {
   /// 现在勾没勾。
   Future<bool> isOn() => _autoStart.isEnabled();
 
-  /// 勾上或撤掉，返回改完之后真正的状态。
-  Future<bool> setOn(bool value) async {
+  /// 勾上或撤掉，返回「系统接不接受」与「改完之后真正的状态」。
+  ///
+  /// 两件事必须分开：系统不接受时，真正的状态是「没变」，而不是「变成用户点的
+  /// 那个值再取反」。早先这里写成 `accepted && isEnabled()`，于是注册表被组策略
+  /// 挡住时开关会自己跳到另一头。
+  Future<({bool accepted, bool on})> setOn(bool value) async {
     final accepted = value ? await _autoStart.enable() : await _autoStart.disable();
-    return accepted && await _autoStart.isEnabled();
+    return (accepted: accepted, on: await _autoStart.isEnabled());
   }
 }

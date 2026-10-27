@@ -4,6 +4,7 @@ import 'package:ai_pet_assistant/data/db/app_db.dart' show AppDb;
 import 'package:ai_pet_assistant/data/repository/settings_repository.dart';
 import 'package:ai_pet_assistant/domain/port/secure_key_gateway.dart';
 import 'package:ai_pet_assistant/features/settings/settings_page.dart';
+import 'package:ai_pet_assistant/platform/autostart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,10 +24,37 @@ class _FakeKeyStore implements SecureKeyGateway {
   Future<void> clear() async => stored = null;
 }
 
+/// 假的开机自启，只记开没开。`accept=false` 用来演系统不接受的情况。
+class _FakeAutoStart implements AutoStart {
+  bool on = true;
+  bool accept = true;
+  int writes = 0;
+
+  @override
+  Future<bool> isEnabled() async => on;
+
+  @override
+  Future<bool> enable() async {
+    writes++;
+    if (!accept) return false;
+    on = true;
+    return true;
+  }
+
+  @override
+  Future<bool> disable() async {
+    writes++;
+    if (!accept) return false;
+    on = false;
+    return true;
+  }
+}
+
 void main() {
   late AppDb db;
   late ProviderContainer container;
   late _FakeKeyStore keyStore;
+  late _FakeAutoStart autoStart;
 
   String? clipboard;
   bool clipboardWorks = true;
@@ -34,12 +62,14 @@ void main() {
   setUp(() {
     db = AppDb.memory();
     keyStore = _FakeKeyStore();
+    autoStart = _FakeAutoStart();
     clipboard = null;
     clipboardWorks = true;
     container = ProviderContainer(
       overrides: [
         appDbProvider.overrideWithValue(db),
         secureKeyGatewayProvider.overrideWithValue(keyStore),
+        autoStartProvider.overrideWithValue(autoStart),
       ],
     );
   });
@@ -287,5 +317,33 @@ void main() {
     expect(container.read(keyConfiguredProvider), isTrue);
 
     await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('开机自启的开关按注册表真值画，点一下就写回去', (tester) async {
+    await pumpPage(tester);
+
+    final toggle = find.byKey(const ValueKey<String>('settings-autostart'));
+    expect(tester.widget<Switch>(toggle).value, isTrue);
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(autoStart.writes, 1);
+    expect(autoStart.on, isFalse);
+    expect(tester.widget<Switch>(toggle).value, isFalse);
+  });
+
+  testWidgets('系统不接受的改动不回显成功，而是弹一句', (tester) async {
+    autoStart.accept = false;
+    await pumpPage(tester);
+
+    await tester.tap(find.byKey(const ValueKey<String>('settings-autostart')));
+    await tester.pumpAndSettle();
+
+    // 注册表没变，开关还在原位。
+    expect(tester.widget<Switch>(find.byKey(const ValueKey<String>('settings-autostart'))).value, isTrue);
+    expect(find.textContaining('系统没有撤掉开机自启'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
   });
 }

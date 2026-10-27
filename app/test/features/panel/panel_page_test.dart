@@ -51,10 +51,12 @@ void main() {
   /// 把面板放进一个跟真实窗口差不多宽的小格子里。
   ///
   /// [scope] 用来换成带假状态的面板（例如问答记录），默认用本文件那个容器。
+  /// [onOpenProject] 只在验「点项目名落项目页」那一条时给。
   Future<void> pumpPanel(
     WidgetTester tester, {
     ProviderContainer? scope,
     Size size = const Size(280, 420),
+    void Function(String projectId)? onOpenProject,
   }) async {
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -62,7 +64,11 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: Center(
-              child: SizedBox(width: size.width, height: size.height, child: const PanelPage()),
+              child: SizedBox(
+                width: size.width,
+                height: size.height,
+                child: PanelPage(onOpenProject: onOpenProject),
+              ),
             ),
           ),
         ),
@@ -75,11 +81,13 @@ void main() {
       tester.widget<Text>(find.byKey(ValueKey<String>(key)));
 
   group('三种形态', () {
-    testWidgets('库里没有事项时是空态，只留一句话', (tester) async {
+    testWidgets('库里没有事项时是空态：一句说明加一句往哪走', (tester) async {
       await pumpPanel(tester);
 
       // 《页面操作流程》第 4 节：无事项状态，正中央显示「当前暂无事项」。
       expect(textOf(tester, 'panel-empty-title').data, '当前暂无事项');
+      // 只给一句「没有」等于把用户堵在面板里，下面跟一句出口。
+      expect(textOf(tester, 'panel-empty-hint').data, '点桌宠进主界面挑一件');
       expect(find.byKey(const ValueKey<String>('panel-track')), findsNothing);
     });
 
@@ -91,6 +99,19 @@ void main() {
       // 行 3 一句写完「共几步·第几步·步名」，不再单起一行显示步名。
       expect(textOf(tester, 'panel-meta').data, '共7步·第3步·写第三章');
       expect(find.byKey(const ValueKey<String>('panel-solo-name')), findsNothing);
+    });
+
+    testWidgets('点项目名把 id 交出去（PRD 第 2 页 370 行）', (tester) async {
+      await seedProject();
+      String? opened;
+      await pumpPanel(tester, onOpenProject: (id) => opened = id);
+
+      await tester.tap(find.byKey(const ValueKey<String>('panel-project-link')));
+      await tester.pump();
+
+      // 交出去的是项目 id（p 前缀）；独立事项那条路不挂这个键。
+      expect(opened, isNotNull);
+      expect(opened, startsWith('p'));
     });
 
     testWidgets('独立事项走形态 B：只有名字，不画轴', (tester) async {
@@ -125,14 +146,14 @@ void main() {
       await seedProject();
       await pumpPanel(tester);
 
-      // 原型 buildTrack 给每段挂了 tip，鼠标停在上面显示步名。
+      // 原型 buildTrack 给每段挂了 tip；PRD 第 2 页 342 行要求带上第几步。
       expect(
         tester.widget<Tooltip>(find.byKey(const ValueKey<String>('panel-track-tip-0'))).message,
-        '选题',
+        '第 1 步 · 选题',
       );
       expect(
         tester.widget<Tooltip>(find.byKey(const ValueKey<String>('panel-track-tip-6'))).message,
-        '答辩',
+        '第 7 步 · 答辩',
       );
     });
   });

@@ -32,7 +32,7 @@ class DeadlineHint {
   final int dueAt;
   final DeadlineStage stage;
 
-  /// 2 小时内算紧急，气泡用更重的边框。
+  /// 落在 2 小时档里。只作分档标识，气泡外观两档一致。
   bool get urgent => stage == DeadlineStage.withinTwoHours;
 }
 

@@ -37,19 +37,21 @@ class DeadlineBubble extends PetBubble {
   /// 「求职 · 回面试邮件」。
   final String name;
 
-  /// 2 小时内算紧急。
+  /// 这条属于 2 小时档还是 24 小时档。
+  ///
+  /// 两档气泡长得一样，PRD 只要求「各提醒一次」；留着这个字段是为了让测试能断言
+  /// 分档没串（`pet_message_test`、`pet_notifier_test` 都靠它）。
   final bool urgent;
 }
 
 /// 开机播报。
 class ReportBubble extends PetBubble {
-  const ReportBubble({required this.rows, required this.more});
+  const ReportBubble({required this.rows});
 
   /// 每个项目一行，项目名与说明分开存，界面好在同一行里给名字加粗。
+  ///
+  /// 最多三行；被截掉的项目不提示（《页面操作流程》第 2 节：不写「还有 N 个」）。
   final List<ReportRow> rows;
-
-  /// 还有几个项目没列出来。
-  final int more;
 }
 
 /// 常驻态的状态。侧别与高度跟着设置走，气泡是一个可同时放两档的栈。
@@ -292,7 +294,6 @@ class PetNotifier extends Notifier<PetState> {
             ReportRow(name: '配音练习', detail: '3/7 42% | 昨天'),
             ReportRow(name: '毕设论文', detail: '1/7 14% | 3天前'),
           ],
-          more: 1,
         ),
       ],
     );
@@ -340,7 +341,7 @@ class PetNotifier extends Notifier<PetState> {
     final rows = digests.take(maxReportRows).map((digest) => reportRow(digest, now: now)).toList();
     state = state.copyWith(
       bubbles: [
-        ReportBubble(rows: rows, more: digests.length - rows.length),
+        ReportBubble(rows: rows),
         ...state.bubbles,
       ],
     );
